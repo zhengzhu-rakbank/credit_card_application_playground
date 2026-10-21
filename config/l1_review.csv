@@ -1,0 +1,7 @@
+feature,decision,review_type,reason
+aecb_oldest_active_facility_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.048 is stable
+aecb_oldest_credit_contract_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.068 is stable
+fts_statement_from_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.052 is stable
+fts_statement_to_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.060 is stable
+fts_earliest_txn_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.045 is stable
+fts_latest_txn_date,KEEP,LEAK,High DEV IV from date monotonicity not leakage; CV IV 0.037 is stable

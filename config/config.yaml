@@ -1,0 +1,184 @@
+project: acard_thinfile
+version: "1.0"
+random_seed: 42
+
+databricks:           
+  catalog: "mis_automation"
+  schema: "datascience_pbg"
+  volume: pbg_cc_ascore
+  artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output"    # /Volumes/<catalog>/<schema>/acard_artifacts
+  mlflow_experiment: "/Users/zheng.zhu@rakbank.ae/acard_scorecard"
+
+columns:
+  id: CRNNO
+  customer: CIF
+  date: APPRECDDATE
+  decision_time: APPROVEDATE   # approval date: feature cut-off AND start of the 12-month window (TBC-05)
+  open_date: null              # optional, informational only
+  status: sample_status        # GOOD / BAD / INDETERMINATE / IMMATURE / EXCLUDED / EXCLUDED_PERF
+  target: target               # see target_codes
+  segments: [segment_thin_file, segment_income_band, segment_nationality_group]
+
+column_roles:                  # Section 2.5; list ONLY non-feature columns (actual source names)
+  key: [ACTIVE_REPORTING,APPRECDDATE,APPROVEDATE,CARD_BUSINESS_SEGMENT,CIF,CLASSCODE,CREDITCARDNO,CRNNO,CURRENT_STATUS,CUSTOMER_SEGMENT,DATE_OF_BIRTH,DELINQUENCYBUCKET,EMID_REFERENCENUMBER,FTS_Ref_No,F_SEGMENT_NEW,GENERALSTAT,PRIMARYCARD,REFERENCE_NUMBER,RULING_FAMILY_FLAG,Reference_Number,SEGMENT_POLICY,VIP,aecb_file_type,aecb_file_type_new,aecb_file_type_revised]
+  performance: [target]        # add delinquency-bucket and early-delinquency columns
+  watch: [AGE, SEX, NATIONALITY]                    # e.g. NATIONALITY, GENDER (never model features, TBC-08)
+  feature_override: [AGE]         # features without a source prefix, e.g. the age column (age IS a feature)
+  feature_prefixes: [aecb_, fts_,]
+  # columns used in population_filters are automatically role FLAG; anything unmatched is UNASSIGNED and stops Step 1
+
+data:
+  raw_snapshot_table: "mis_automation.ds_exploration.acard_cc_data"
+  extraction_date: "2022-07-01"   # date the snapshot was extracted (TBC-05)
+
+expected_counts:               # Section 1.2; Step 1 MUST reproduce exactly (GOOD + BAD only)
+  ALL:       {records: 15090, bads: 1377}
+  DEV:       {records: 10708, bads: 994}
+  DEV_EARLY: {records: 7663,  bads: 754}
+  DEV_LATE:  {records: 3045,  bads: 240}
+  OOT:       {records: 4382,  bads: 383}
+
+file_type:                     # Appendix G; TBC-16 (column names). Evaluated as at APPROVEDATE
+  source_column: aecb_file_type_revised          # set if the source already has a file-type column (values THICK / NO_FILE / THIN)
+  inputs:                      # otherwise: actual source names of thefile three bureau inputs
+    oldest_contract_age_months: null
+    oldest_active_contract_age_months: null          # null value = no active facility
+    closed_last_6m_with_contract_age_ge_12m: null    # Y / N
+  keep: "THIN FILE"
+
+population_filters:            # Section 2.3, confirmed 2026-10-13 (agreed by Risk Analysis). Values compared after str -> trim -> UPPER; "" = null
+  application_time:            # -> EXCLUDED: removed from training AND PSI
+    exclude:
+      - {name: VIP,                 column: VIP,                op: eq, value: "1"}
+      - {name: RULING_FAMILY,       column: RULING_FAMILY_FLAG, op: eq, value: "Y"}
+      - {name: SUPPLEMENTARY_CARD,  column: PRIMARYCARD,        op: eq, value: "0"}
+      - {name: SALARIED_IM,         column: F_SEGMENT_NEW,      op: eq, value: "SALARIED-IM"}
+      - {name: SEGMENT_POLICY_EXCL, column: SEGMENT_POLICY,     op: in, value: ["PL CUSTOMERS", "AUTO-LOAN CUSTOMERS", "MORTGAGE CXMS", "STAFF"]}
+      - {name: CLASSCODE_STAFF_SME, column: CLASSCODE,          op: in, value: ["STAFF", "SME"]}   # null / empty / other values are KEPT
+    include:                   # keep only records meeting ALL of these
+      - {name: CARDS_ONLY,          column: CARD_BUSINESS_SEGMENT, op: eq, value: "CARDS"}
+      - {name: SALARIED_ONLY,       column: CUSTOMER_SEGMENT,      op: eq, value: "SALARIED"}
+      - {name: THIN_FILE_ONLY,      column: aecb_file_type_revised,             op: eq, value: "THIN FILE"}     # FILE_TYPE derived in Step 1 (Appendix G)
+  performance_related:         # -> EXCLUDED_PERF: removed from training/IV/WoE/OOT, KEPT in PSI
+    exclude:
+      - {name: FRAUD_STATUS,        column: GENERALSTAT,        op: in, value: ["FRUD"]}
+    include:
+      - {name: ACTIVE_REPORTING_Y,  column: ACTIVE_REPORTING,   op: eq, value: "Y"}
+
+psi_statuses: [GOOD, BAD, INDETERMINATE, IMMATURE, EXCLUDED_PERF]   # Section 6.4.1 (P1)
+
+target_codes:                  # Section 2.2
+  BAD: 1
+  GOOD: 0
+  INDETERMINATE: -1
+  IMMATURE: -2
+labelled_statuses: [GOOD, BAD] # the ONLY records used for any label-based work (select on sample_status)
+
+target_definition:             # TBC-04 / TBC-05
+  precomputed: true            # use the source column as is; do NOT recompute
+  source_column: target        # actual name of the target column in the source table
+  basis: DELINQUENCYBUCKET
+  performance_months: 12
+  performance_start: APPROVEDATE  # TBC-05 confirmed
+  bad_bucket_min: 4            # bucket 4+ (90+ DPD) = BAD
+  good_bucket: 0               # bucket 0 only = GOOD
+  indeterminate_buckets: [1, 3]   # buckets 1-3 (1-89 DPD) = INDETERMINATE
+  
+windows:                       # [start, end)
+  DEV:    ["2022-07-01", "2025-01-01"]
+  OOT:    ["2025-01-01", "2025-07-01"]
+  FWD:    ["2025-07-01", "2026-03-01"]
+  STRESS: ["2026-03-01", "2026-10-01"]
+oot_report_splits:
+  Q1: ["2025-01-01", "2025-04-01"]
+  Q2: ["2025-04-01", "2025-07-01"]
+backtest:
+  train: ["2022-07-01", "2024-07-01"]
+  test:  ["2024-07-01", "2025-01-01"]
+
+cv:
+  r_folds: {n_splits: 5, n_repeats: 3, strat_key: [target, app_quarter]}
+  t_folds:
+    T1: {train: ["2022-07-01", "2023-07-01"], valid: ["2023-07-01", "2024-01-01"]}
+    T2: {train: ["2022-07-01", "2024-01-01"], valid: ["2024-01-01", "2024-07-01"]}
+    T3: {train: ["2022-07-01", "2024-07-01"], valid: ["2024-07-01", "2025-01-01"]}
+
+funnel:
+  L0: {max_single_value_share: 0.98, max_missing_rate: 0.95,
+       missing_informative_ratio: 1.5, missing_informative_min_bad: 30}
+  L1:
+    binning: {solver: cp, monotonic_trend: auto_asc_desc, min_bin_size: 0.05,
+              min_bin_n_event: 20, max_n_prebins: 20, max_n_bins: 8, cat_cutoff: 0.05}
+    iv_min: 0.02
+    iv_review_band: [0.02, 0.05]
+    iv_leak_review: 0.5
+    cv_iv_folds: 5
+  L2: {n_segments: 4, seg_iv_min: 0.02, drop_if_low_iv_segments_ge: 2,
+       min_bin_count_for_rank: 100, rank_corr_flag: 0.8, iv_ratio_flag: 3.0, drop_on_head_tail_flip: true}
+  L3: {psi_green: 0.10, psi_red: 0.25, eps: 1.0e-4, missing_jump: 0.10,
+       granularity: quarter, baseline: DEV_full}
+  L4: {corr_method: spearman, corr_max: 0.70, vif_max: 5.0}
+  L5: {c_grid: [-3, 1, 30], c_rule: one_se, n_subsamples: 100, subsample_frac: 0.8,
+       select_freq: [0.60, 0.70, 0.80], select_freq_floor: 0.50,
+       n_features: [10, 20], pvalue_max: 0.05, points_share_flag: 0.30}
+
+tuning:
+  lightgbm_trials: 60
+  ebm_trials: 30
+  keep_within_sd: 1.0
+  max_candidates: 5
+  simplicity_tolerance: 0.005
+  lgb_early_stopping: 100
+  lgb_max_rounds: 3000
+  lgb_round_multiplier: 1.1
+
+selection:                     # Section 8.1; signed before OOT is read
+  bootstrap: {n: 2000, seed: 42, stratified: true}
+  r1_gini_lift_lower: 0.02     # TBC-09
+  c_over_b_gini_lift_lower: 0.01
+  r3_tfold_std_ratio: 1.5
+  r3_q2_ks_drop_margin: 0.03
+
+calibration: {method: platt, fit_on: dev_oof, central_tendency: "2024-07..2025-06"}  # TBC-11
+scaling: {base_score: 600, base_odds: 20, odds_type: good_to_bad, pdo: 20,
+          score_min: 300, score_max: 900}                                       # TBC-10
+retrain: {score_spearman_min: 0.95, decile_agreement_min: 0.90, auc_tolerance: 0.01,
+          exclude_shock_sensitivity: ["2025-03-01", "2025-07-01"]}              # TBC-12
+reason_codes: {n_codes: 4}                                                       # TBC-13
+deployment: {replay_n_min: 1000, numeric_tol: 1.0e-6}
+
+runtime:
+  lgb_num_threads: 4
+
+review_files:                       # filled by people, read by code
+  l1_review: config/l1_review.csv           # E5: feature, review_type(LEAK|DIRECTION), decision(KEEP|DROP), reason, reviewer, date
+  psi_decisions: config/psi_decisions.csv   # E7: feature, cause_type, evidence, policy_change_date, decision, reviewer, date
+  signoff: config/signoff.yaml              # E12/E13/E16 sign-offs
+  reason_code_map: config/reason_code_map.csv  # E13/E18: feature, reason_group, text_en, text_ar
+  threshold_changes: config/threshold_changes.csv
+
+strategy:
+  proposed_cutoff: null             # score; null = E13 skips approval rate at cut-off and reports by score decile
+
+early_delinquency:                  # Chapter 11 / 14 (report only); actual source column names, null if not available
+  fpd_column: null
+  dpd30_3m_column: null
+  min_mob: 3
+
+reject_inference:
+  data: none                        # none | features_only | bureau_outcome (TBC-07)
+
+registry:
+  version: "1.0.0"
+  register_in_uc: false             # true = register A/B/C in Unity Catalog with alias "locked"
+
+monitoring:                         # Chapter 14 defaults
+  score_log_table: null             # production log table; null = simulate on FWD/STRESS
+  score_psi: {amber: 0.10, red: 0.25}
+  feature_csi: {amber: 0.10, red: 0.25}
+  data_failure_increase: {amber: 0.50, red: 1.00}
+  watch_approval_gap_pp: {amber: 5, red: 10}
+  approval_rate_pp: {amber: 3, red: 5}
+  early_delinq_ae_top_quintile: {amber: 1.3, red: 1.5}
+  gini_drop: {amber: 0.05, red: 0.10}
+  calibration_ratio: {amber: [0.8, 1.25], red: [0.67, 1.5]}

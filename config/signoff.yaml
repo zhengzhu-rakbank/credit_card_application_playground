@@ -1,0 +1,7 @@
+decision_rules_signed_by: ""      # E12 before lock
+signed_date: ""
+model_owner: ""
+r4_reason_codes_approved: false   # Compliance approved reason_code_map.csv and method (before E13)
+r4_approved_by: ""
+central_tendency_target: null     # TBC-11 long-run bad rate; null = use actual 2024-07..2025-06 rate (E16)
+central_tendency_approved_by: ""

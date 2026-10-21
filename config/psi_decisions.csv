@@ -1,0 +1,13 @@
+﻿feature,cause_type,decision
+aecb_income_age_months,UNKNOWN,DROP
+fts_reported_credit_count,UNKNOWN,DROP
+fts_overall_avg_monthly_salary,UNKNOWN,DROP
+fts_total_salary_amount_3m,UNKNOWN,DROP
+fts_total_credit_count_3m,UNKNOWN,DROP
+fts_non_salary_credit_count_3m,UNKNOWN,DROP
+fts_total_credit_count_6m,UNKNOWN,DROP
+fts_non_salary_credit_count_6m,UNKNOWN,DROP
+fts_sal_amount_variance_3m,UNKNOWN,DROP
+fts_sal_amount_variance_6m,UNKNOWN,DROP
+fts_sal_amount_stdde_3m,UNKNOWN,DROP
+fts_sal_amount_stdde_6m,UNKNOWN,DROP
