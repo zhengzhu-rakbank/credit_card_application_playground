@@ -15,10 +15,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import sklearn
 import yaml
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedShuffleSplit
+
+_SK_VER = tuple(int(x) for x in sklearn.__version__.split(".")[:2])
 
 logger = logging.getLogger(__name__)
 
@@ -348,9 +351,14 @@ def stability_selection(
             n_splits=1, train_size=frac, random_state=seed + i
         )
         idx, _ = next(sss.split(X_woe, strat))
-        lr = LogisticRegression(
-            penalty="l1", solver="liblinear", C=C, max_iter=2000
-        )
+        if _SK_VER >= (1, 8):
+            lr = LogisticRegression(
+                l1_ratio=1.0, solver="liblinear", C=C, max_iter=2000
+            )
+        else:
+            lr = LogisticRegression(
+                penalty="l1", solver="liblinear", C=C, max_iter=2000
+            )
         lr.fit(X_woe.iloc[idx], y.iloc[idx])
         counts += (np.abs(lr.coef_[0]) > 1e-8).astype(float)
     return (counts / n_sub).sort_values(ascending=False)
