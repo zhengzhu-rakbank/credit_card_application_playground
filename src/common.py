@@ -48,6 +48,36 @@ def artifacts_path(cfg: dict) -> str:
     return "/" + cfg["databricks"]["artifacts_root"].lstrip("/")
 
 
+def find_project_root(start: str) -> str:
+    """Walk up from *start* until ``config/config.yaml`` is found."""
+    p = os.path.abspath(start)
+    while p != "/":
+        if os.path.exists(os.path.join(p, "config", "config.yaml")):
+            return p
+        p = os.path.dirname(p)
+    raise FileNotFoundError(f"config/config.yaml not found above {start}")
+
+
+def git_commit(root: str) -> str:
+    """Current commit of the Git folder at *root* (reads .git directly); 'unknown' if unavailable."""
+    try:
+        head = open(os.path.join(root, ".git", "HEAD")).read().strip()
+        if not head.startswith("ref:"):
+            return head
+        ref = head.split(" ", 1)[1]
+        p = os.path.join(root, ".git", ref)
+        if os.path.exists(p):
+            return open(p).read().strip()
+        pr = os.path.join(root, ".git", "packed-refs")
+        if os.path.exists(pr):
+            for line in open(pr):
+                if line.strip().endswith(ref):
+                    return line.split()[0]
+    except Exception:
+        pass
+    return "unknown"
+
+
 # ---------------------------------------------------------------------------
 # Label guard  (spec 2.2 — mandatory rule)
 # ---------------------------------------------------------------------------
@@ -351,14 +381,7 @@ def stability_selection(
             n_splits=1, train_size=frac, random_state=seed + i
         )
         idx, _ = next(sss.split(X_woe, strat))
-        if _SK_VER >= (1, 8):
-            lr = LogisticRegression(
-                l1_ratio=1.0, solver="liblinear", C=C, max_iter=2000
-            )
-        else:
-            lr = LogisticRegression(
-                penalty="l1", solver="liblinear", C=C, max_iter=2000
-            )
+        lr = lr_l1(C)
         lr.fit(X_woe.iloc[idx], y.iloc[idx])
         counts += (np.abs(lr.coef_[0]) > 1e-8).astype(float)
     return (counts / n_sub).sort_values(ascending=False)
@@ -580,3 +603,204 @@ def assign_column_roles(
             records.append({"feature": col, "role": "UNASSIGNED", "rule": ""})
 
     return pd.DataFrame(records)
+
+
+# ---------------------------------------------------------------------------
+# Logistic-regression factories (scikit-learn version-aware, App. D note)
+# ---------------------------------------------------------------------------
+
+def lr_l1(C: float, max_iter: int = 2000) -> LogisticRegression:
+    """L1-penalised liblinear logistic regression (spec 6.6)."""
+    if _SK_VER >= (1, 8):
+        return LogisticRegression(l1_ratio=1.0, solver="liblinear", C=C, max_iter=max_iter)
+    return LogisticRegression(penalty="l1", solver="liblinear", C=C, max_iter=max_iter)
+
+
+def lr_unpenalised(max_iter: int = 2000, tol: float = 1e-10) -> LogisticRegression:
+    """Unregularised logistic regression (spec 7.3: penalty=None; C=np.inf form for sklearn >= 1.8).
+
+    Default *tol* is 1e-10 (tighter than sklearn's 1e-4) so that the MLE matches
+    statsmodels Logit to < 1e-4 — the E11 acceptance criterion.
+    """
+    if _SK_VER >= (1, 8):
+        return LogisticRegression(C=np.inf, max_iter=max_iter, tol=tol)
+    return LogisticRegression(penalty=None, max_iter=max_iter, tol=tol)
+
+
+# ---------------------------------------------------------------------------
+# Raw-value preparation for Models B and C  (spec 7.4, 7.5)
+# ---------------------------------------------------------------------------
+
+def parse_special_codes(val: Any) -> list:
+    """Parse the feature-dictionary ``special_codes`` cell into a list.
+
+    Accepts NaN / empty (-> []), a JSON / Python list string such as
+    ``"[-1, -999]"``, a ``;``- or ``|``-separated string, or a scalar.
+    """
+    if val is None:
+        return []
+    if isinstance(val, (list, tuple)):
+        return list(val)
+    if isinstance(val, float) and np.isnan(val):
+        return []
+    s = str(val).strip()
+    if s == "" or s.lower() in ("nan", "none", "[]"):
+        return []
+    try:
+        out = json.loads(s)
+        return out if isinstance(out, list) else [out]
+    except (ValueError, TypeError):
+        pass
+    parts = [p.strip() for p in s.strip("[]").replace("|", ";").replace(",", ";").split(";") if p.strip()]
+    res = []
+    for p in parts:
+        try:
+            res.append(json.loads(p))
+        except (ValueError, TypeError):
+            res.append(p.strip("'\""))
+    return res
+
+
+def special_indicator_name(feature: str, code: Any) -> str:
+    """Name of the special-value indicator column: ``<feature>_is_special_<code>``."""
+    return f"{feature}_is_special_{code}"
+
+
+def prepare_raw(
+    df: pd.DataFrame,
+    features: list,
+    feature_dict: pd.DataFrame,
+    categories: Optional[Dict[str, list]] = None,
+) -> pd.DataFrame:
+    """Raw feature matrix for Models B and C (spec 7.4, 7.5).
+
+    - Numerical features: coerced to float; each special code from the feature
+      dictionary is set to NaN and an int indicator ``<feature>_is_special_<code>``
+      is added (always created, so the column set is deterministic).
+    - Categorical features: kept as pandas ``category`` (missing stays NaN);
+      special codes get the same NaN + indicator treatment.  Pass *categories*
+      (feature -> list) to fix the category levels when scoring new data.
+    Column order: each feature followed by its indicators, in *features* order.
+    """
+    fd = feature_dict.set_index("feature") if "feature" in feature_dict.columns else feature_dict
+    cols: Dict[str, pd.Series] = {}
+    for f in features:
+        dtype = str(fd.loc[f, "dtype"]).lower() if f in fd.index else "numerical"
+        codes = parse_special_codes(fd.loc[f, "special_codes"]) if f in fd.index and "special_codes" in fd.columns else []
+        if dtype == "categorical":
+            s = df[f].astype("object").where(df[f].notna(), np.nan)
+            s = s.map(lambda v: v if (isinstance(v, float) and np.isnan(v)) else str(v).strip())
+            code_vals = [str(c) for c in codes]
+        else:
+            s = pd.to_numeric(df[f], errors="coerce").astype(float)
+            code_vals = [float(c) for c in codes]
+        inds = {}
+        for c, cv in zip(codes, code_vals):
+            hit = (s == cv).fillna(False)
+            inds[special_indicator_name(f, c)] = hit.astype(int)
+            s = s.mask(hit)
+        if dtype == "categorical":
+            levels = (categories or {}).get(f)
+            s = pd.Categorical(s, categories=levels) if levels is not None else pd.Categorical(s)
+            s = pd.Series(s, index=df.index)
+        cols[f] = s
+        cols.update(inds)
+    return pd.DataFrame(cols, index=df.index)
+
+
+def binning_trend(optb) -> str:
+    """Risk trend of a fitted OptimalBinning object from its regular bins.
+
+    Returns ``ascending`` (higher value -> higher Bad Rate), ``descending``,
+    ``categorical`` or ``non_monotonic`` (peak / valley / other).
+    Special and Missing bins are ignored.
+    """
+    if str(getattr(optb, "dtype", "numerical")) == "categorical":
+        return "categorical"
+    bt = optb.binning_table.build()
+    bt = bt[bt.index != "Totals"]
+    reg = bt[~bt["Bin"].astype(str).isin(["Special", "Missing"])]
+    er = pd.to_numeric(reg["Event rate"], errors="coerce").dropna().to_numpy()
+    if len(er) < 2:
+        return "non_monotonic"
+    d = np.diff(er)
+    if (d >= 0).all() and (d > 0).any():
+        return "ascending"
+    if (d <= 0).all() and (d < 0).any():
+        return "descending"
+    return "non_monotonic"
+
+
+def monotone_vector(
+    columns: list,
+    features: list,
+    binning_objects: Dict[str, Any],
+    feature_dict: pd.DataFrame,
+) -> List[int]:
+    """LightGBM monotone_constraints aligned with *columns* (spec 7.5).
+
+    +1 for an ascending L1 trend, -1 for descending, 0 for peak / valley /
+    other, categorical features and special-value indicator columns.
+    """
+    fd = feature_dict.set_index("feature") if "feature" in feature_dict.columns else feature_dict
+    out = []
+    for c in columns:
+        if c not in features:
+            out.append(0)
+            continue
+        if c in fd.index and str(fd.loc[c, "dtype"]).lower() == "categorical":
+            out.append(0)
+            continue
+        t = binning_trend(binning_objects[c])
+        out.append(1 if t == "ascending" else (-1 if t == "descending" else 0))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Tuning stage-2 selection rules  (spec 7.2)
+# ---------------------------------------------------------------------------
+
+SIMPLICITY_KEYS = {
+    # (parameter, ascending?)  -> smaller num_leaves first, ... larger lambda_l2 first
+    "C": [("num_leaves", True), ("max_depth", True), ("min_child_samples", False), ("lambda_l2", False)],
+    "B": [("max_bins", True), ("max_leaves", True), ("min_samples_leaf", False)],
+}
+
+
+def shortlist_trials(
+    trials: pd.DataFrame,
+    cfg: dict,
+    mean_col: str = "cv_auc_mean",
+    std_col: str = "cv_auc_std",
+    param_cols: Optional[list] = None,
+) -> Tuple[pd.DataFrame, float]:
+    """Stage-2 shortlist: mean >= best mean - keep_within_sd x std(best), top max_candidates by mean.
+
+    If *param_cols* is given, repeated trials of an identical parameter set (possible with
+    categorical search spaces) count once: the lowest trial number is kept.
+    """
+    t = cfg["tuning"]
+    best = trials.loc[trials[mean_col].idxmax()]
+    thr = float(best[mean_col] - t["keep_within_sd"] * best[std_col])
+    sl = trials[trials[mean_col] >= thr].sort_values([mean_col, "trial"], ascending=[False, True])
+    if param_cols:
+        sl = sl.drop_duplicates(subset=param_cols, keep="first")
+    sl = sl.head(t["max_candidates"])
+    return sl.reset_index(drop=True), thr
+
+
+def pick_simplest(tres: pd.DataFrame, model: str, cfg: dict) -> Tuple[int, pd.DataFrame]:
+    """Stage-2 choice: highest t_auc_mean, then the simplest set within simplicity_tolerance.
+
+    *tres* needs columns ``trial``, ``t_auc_mean`` and the simplicity parameters.
+    Ties after the simplicity keys: higher t_auc_mean, then lower trial number.
+    Returns ``(chosen_trial, candidates_within_tolerance)``.
+    """
+    tol = cfg["tuning"]["simplicity_tolerance"]
+    best = float(tres["t_auc_mean"].max())
+    near = tres[tres["t_auc_mean"] >= best - tol]
+    keys = SIMPLICITY_KEYS[model]
+    by = [k for k, _ in keys] + ["t_auc_mean", "trial"]
+    asc = [a for _, a in keys] + [False, True]
+    near = near.sort_values(by, ascending=asc).reset_index(drop=True)
+    return int(near.loc[0, "trial"]), near
