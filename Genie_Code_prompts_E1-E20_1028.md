@@ -1,4 +1,4 @@
-# A Card：Genie Code 模块指令 E3–E20
+# A Card：Genie Code 模块指令 E!–E20
 
 适用于规格书 v1.0.5（`acard-scorecard` skill）以及你项目里实际使用的 `config/config.yaml`。
 
