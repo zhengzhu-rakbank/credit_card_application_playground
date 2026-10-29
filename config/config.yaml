@@ -36,7 +36,7 @@ expected_counts:               # Section 1.2; Step 1 MUST reproduce exactly (GOO
   DEV:       {records: 10708, bads: 994}
   DEV_EARLY: {records: 7663,  bads: 754}
   DEV_LATE:  {records: 3045,  bads: 240}
-  OOT:       {records: 4382,  bads: 383}
+  OOT:       {records: 4527,  bads: 395}   # 2026-10-28 (owner): was 4382/383; +145 (12 Bads) APPRECDDATE in OOT, APPROVEDATE >= 2025-07-01, added by FWD/STRESS append [E13-oot-count]
 
 file_type:                     # Appendix G; TBC-16 (column names). Evaluated as at APPROVEDATE
   source_column: aecb_file_type_revised          # set if the source already has a file-type column (values THICK / NO_FILE / THIN)
@@ -138,6 +138,14 @@ selection:                     # Section 8.1; signed before OOT is read
   c_over_b_gini_lift_lower: 0.01
   r3_tfold_std_ratio: 1.5
   r3_q2_ks_drop_margin: 0.03
+
+strategy_overlay:
+  external_score: aecb_AECB_Score   # pre-registered with selection; copied into model_registry.json at E12
+  method: matrix               # matrix | logit_combine
+  own_score_bands: dev_deciles
+  external_bands: dev_quintiles
+  version_change_date: "2026-09-26"
+  combine_rule: {gini_lift_lower: 0.02}   # used only when method = logit_combine
 
 calibration: {method: platt, fit_on: dev_oof, central_tendency: "2024-07..2025-06"}  # TBC-11
 scaling: {base_score: 600, base_odds: 20, odds_type: good_to_bad, pdo: 20,

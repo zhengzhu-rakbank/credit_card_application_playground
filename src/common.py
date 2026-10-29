@@ -804,3 +804,113 @@ def pick_simplest(tres: pd.DataFrame, model: str, cfg: dict) -> Tuple[int, pd.Da
     asc = [a for _, a in keys] + [False, True]
     near = near.sort_values(by, ascending=asc).reset_index(drop=True)
     return int(near.loc[0, "trial"]), near
+
+
+# ---------------------------------------------------------------------------
+# Calibration  (spec 9.1) - Platt / logistic calibration fitted on DEV OOF only
+# ---------------------------------------------------------------------------
+
+_P_CLIP = 1e-6
+
+
+def logit(p: np.ndarray) -> np.ndarray:
+    """log(p / (1 - p)) with p clipped to [1e-6, 1 - 1e-6]."""
+    p = np.clip(np.asarray(p, dtype=float), _P_CLIP, 1 - _P_CLIP)
+    return np.log(p / (1 - p))
+
+
+def fit_platt(y: np.ndarray, p_raw: np.ndarray) -> Dict[str, float]:
+    """Fit logit(PD) = a + b * logit(p_raw) by unpenalised maximum likelihood (spec 9.1).
+
+    Fit on DEV OOF predictions only (never on in-sample predictions or OOT).
+    """
+    y = np.asarray(y, dtype=int)
+    x = logit(p_raw).reshape(-1, 1)
+    lr = lr_unpenalised()
+    lr.fit(x, y)
+    return {"a": float(lr.intercept_[0]), "b": float(lr.coef_[0, 0]), "n": int(len(y)), "n_bad": int(y.sum())}
+
+
+def apply_platt(p_raw: np.ndarray, params: Dict[str, float]) -> np.ndarray:
+    """Calibrated PD = sigmoid(a + b * logit(p_raw))."""
+    z = params["a"] + params["b"] * logit(p_raw)
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def calibration_stats(y: np.ndarray, pd_: np.ndarray) -> Dict[str, float]:
+    """CITL, calibration slope, Brier and log loss (spec 8.2).
+
+    CITL = mean predicted PD - actual Bad Rate; calibration slope = coefficient of a
+    logistic regression of the outcome on logit(PD) as the only predictor.
+    """
+    from sklearn.metrics import brier_score_loss, log_loss
+    y = np.asarray(y, dtype=int)
+    pd_ = np.clip(np.asarray(pd_, dtype=float), _P_CLIP, 1 - _P_CLIP)
+    slope = fit_platt(y, pd_)
+    return {"mean_pd": float(pd_.mean()), "bad_rate": float(y.mean()), "citl": float(pd_.mean() - y.mean()),
+            "cal_intercept": slope["a"], "cal_slope": slope["b"],
+            "brier": float(brier_score_loss(y, pd_)), "log_loss": float(log_loss(y, pd_, labels=[0, 1]))}
+
+
+# ---------------------------------------------------------------------------
+# Single-model stratified bootstrap CI and DeLong test  (spec 8.2, 8.3)
+# ---------------------------------------------------------------------------
+
+def bootstrap_auc_gini_ks(y: np.ndarray, pd_: np.ndarray, cfg: dict) -> Dict[str, float]:
+    """AUC, Gini, KS with stratified bootstrap 95% CIs (Bads and Goods resampled separately)."""
+    b = cfg["selection"]["bootstrap"]
+    rng = np.random.default_rng(b["seed"])
+    y, pd_ = np.asarray(y, dtype=int), np.asarray(pd_, dtype=float)
+    i_bad, i_good = np.where(y == 1)[0], np.where(y == 0)[0]
+    auc, ks = [], []
+    for _ in range(b["n"]):
+        idx = np.concatenate([rng.choice(i_bad, len(i_bad), replace=True),
+                              rng.choice(i_good, len(i_good), replace=True)])
+        auc.append(roc_auc_score(y[idx], pd_[idx]))
+        ks.append(ks_stat(y[idx], pd_[idx]))
+    auc, ks = np.asarray(auc), np.asarray(ks)
+    a0 = float(roc_auc_score(y, pd_))
+    return {"n": int(len(y)), "n_bad": int(y.sum()), "bad_rate": float(y.mean()),
+            "auc": a0, "auc_lo": float(np.percentile(auc, 2.5)), "auc_hi": float(np.percentile(auc, 97.5)),
+            "gini": 2 * a0 - 1, "gini_lo": float(2 * np.percentile(auc, 2.5) - 1),
+            "gini_hi": float(2 * np.percentile(auc, 97.5) - 1),
+            "ks": ks_stat(y, pd_), "ks_lo": float(np.percentile(ks, 2.5)), "ks_hi": float(np.percentile(ks, 97.5))}
+
+
+def _midrank(x: np.ndarray) -> np.ndarray:
+    order = np.argsort(x, kind="mergesort")
+    xs = x[order]
+    n = len(x)
+    t = np.zeros(n, dtype=float)
+    i = 0
+    while i < n:
+        j = i
+        while j < n and xs[j] == xs[i]:
+            j += 1
+        t[i:j] = 0.5 * (i + j - 1) + 1
+        i = j
+    out = np.empty(n, dtype=float)
+    out[order] = t
+    return out
+
+
+def delong_test(y: np.ndarray, pd_x: np.ndarray, pd_y: np.ndarray) -> Dict[str, float]:
+    """DeLong test for two correlated AUCs on the same records (fast midrank algorithm, Sun & Xu 2014)."""
+    from scipy.stats import norm
+    y = np.asarray(y, dtype=int)
+    preds = np.vstack([np.asarray(pd_x, float), np.asarray(pd_y, float)])
+    pos, neg = preds[:, y == 1], preds[:, y == 0]
+    m, n = pos.shape[1], neg.shape[1]
+    tx = np.vstack([_midrank(r) for r in pos])
+    ty = np.vstack([_midrank(r) for r in neg])
+    tz = np.vstack([_midrank(r) for r in np.hstack([pos, neg])])
+    aucs = (tz[:, :m].sum(axis=1) / m - (m + 1) / 2.0) / n
+    v01 = (tz[:, :m] - tx) / n
+    v10 = 1.0 - (tz[:, m:] - ty) / m
+    s = np.cov(v01) / m + np.cov(v10) / n
+    var = float(s[0, 0] + s[1, 1] - 2 * s[0, 1])
+    d = float(aucs[0] - aucs[1])
+    z = d / np.sqrt(var) if var > 0 else 0.0
+    return {"auc_x": float(aucs[0]), "auc_y": float(aucs[1]), "dAUC": d, "se": float(np.sqrt(max(var, 0))),
+            "z": float(z), "p_two_sided": float(2 * norm.sf(abs(z))),
+            "ci_low": d - 1.959964 * np.sqrt(max(var, 0)), "ci_high": d + 1.959964 * np.sqrt(max(var, 0))}

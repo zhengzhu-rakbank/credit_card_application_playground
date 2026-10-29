@@ -1,0 +1,167 @@
+﻿Feature Name,Feature Group,Source View,Description
+fts_ref_no,Identifier,Overall,FTS statement request reference number (grain key)
+fts_iban_num,Identifier,Overall,Customer IBAN number
+fts_master_id_number,Identifier,Overall,Customer master ID (Emirates ID / Trade License)
+fts_customer_name,Identifier,Overall,Customer name from statement request
+fts_status,Identifier,Overall,"Statement request status (FA=Fulfilled Auto, FR=Fulfilled Request)"
+fts_reject_reason,Identifier,Overall,Rejection reason if statement was rejected
+fts_statement_from_date,Statement Coverage,Overall,Start date of the requested statement period
+fts_statement_to_date,Statement Coverage,Overall,End date of the requested statement period
+fts_statement_days_requested,Statement Coverage,Overall,Number of days in the requested statement period
+fts_statement_months_requested,Statement Coverage,Overall,Number of months in the requested statement period
+fts_earliest_txn_date,Statement Coverage,Overall,Earliest transaction date in the statement
+fts_latest_txn_date,Statement Coverage,Overall,Latest transaction date in the statement
+fts_actual_txn_days_span,Statement Coverage,Overall,Actual span in days between earliest and latest txn
+fts_months_with_txn_data,Statement Coverage,Overall,Count of distinct months with at least one transaction
+fts_statement_coverage_ratio,Statement Coverage,Overall,months_with_txn_data / statement_months_requested
+fts_signed_opening_balance,Balance,Overall,Opening balance (negative if D/C mark = D)
+fts_signed_closing_balance,Balance,Overall,Closing balance (negative if D/C mark = D)
+fts_balance_change,Balance,Overall,signed_closing_balance - signed_opening_balance
+fts_balance_change_pct,Balance,Balance Buffer,Avg month-on-month balance % change over last 3 months (derived from end-of-month balances)
+fts_reported_credit_count,Balance,Overall,Number of credits reported in statement control record
+fts_reported_total_credits,Balance,Overall,Total credit amount from statement control record
+fts_reported_debit_count,Balance,Overall,Number of debits reported in statement control record
+fts_reported_total_debits,Balance,Overall,Total debit amount from statement control record
+fts_has_salary,Salary - Overall,Overall,"1 if any salary transaction detected, else 0"
+fts_salary_source_type,Salary - Overall,Overall,How salary was detected: SAL_TYPE / WPS_NARRATIVE / NARRATIVE_KEYWORD / NO_SALARY
+fts_overall_salary_txn_count,Salary - Overall,Overall,Total salary transaction count across full statement
+fts_overall_total_salary_amount,Salary - Overall,Overall,Total salary amount across full statement
+fts_overall_avg_salary_amount,Salary - Overall,Overall,Average individual salary transaction amount
+fts_overall_salary_months_count,Salary - Overall,Overall,Distinct months with salary transactions
+fts_overall_salary_regularity_ratio,Salary - Overall,Overall,salary_months_count / months_with_txn_data
+fts_overall_avg_monthly_salary,Salary - Overall,Overall,total_salary_amount / salary_months_count
+fts_is_payroll_customer_3m,Salary & Inflow - 3M,Salary Inflow,"1 if salary detected in 3m window, else 0"
+fts_salary_credit_count_3m,Salary & Inflow - 3M,Salary Inflow,Count of salary credits in 3m window
+fts_total_salary_amount_3m,Salary & Inflow - 3M,Salary Inflow,Total salary amount in 3m window
+fts_avg_salary_amount_3m,Salary & Inflow - 3M,Salary Inflow,Average salary transaction amount in 3m window
+fts_salary_months_active_3m,Salary & Inflow - 3M,Salary Inflow,Distinct months with salary in 3m window
+fts_salary_regularity_ratio_3m,Salary & Inflow - 3M,Salary Inflow,salary_months_active_3m / 3
+fts_total_credit_count_3m,Salary & Inflow - 3M,Salary Inflow,Total credit transaction count in 3m window
+fts_total_credit_amount_3m,Salary & Inflow - 3M,Salary Inflow,Total credit amount in 3m window
+fts_avg_credit_amount_3m,Salary & Inflow - 3M,Salary Inflow,Average credit transaction amount in 3m window
+fts_max_credit_amount_3m,Salary & Inflow - 3M,Salary Inflow,Largest single credit in 3m window
+fts_min_credit_amount_3m,Salary & Inflow - 3M,Salary Inflow,Smallest single credit in 3m window
+fts_salary_to_credit_ratio_3m,Salary & Inflow - 3M,Salary Inflow,total_salary_amount_3m / total_credit_amount_3m
+fts_non_salary_credit_count_3m,Salary & Inflow - 3M,Salary Inflow,Non-salary credit count in 3m window
+fts_non_salary_credit_amount_3m,Salary & Inflow - 3M,Salary Inflow,Non-salary credit amount in 3m window
+fts_is_payroll_customer_6m,Salary & Inflow - 6M,Salary Inflow,"1 if salary detected in 6m window, else 0"
+fts_salary_credit_count_6m,Salary & Inflow - 6M,Salary Inflow,Count of salary credits in 6m window
+fts_total_salary_amount_6m,Salary & Inflow - 6M,Salary Inflow,Total salary amount in 6m window
+fts_avg_salary_amount_6m,Salary & Inflow - 6M,Salary Inflow,Average salary transaction amount in 6m window
+fts_salary_months_active_6m,Salary & Inflow - 6M,Salary Inflow,Distinct months with salary in 6m window
+fts_salary_regularity_ratio_6m,Salary & Inflow - 6M,Salary Inflow,salary_months_active_6m / 6
+fts_total_credit_count_6m,Salary & Inflow - 6M,Salary Inflow,Total credit transaction count in 6m window
+fts_total_credit_amount_6m,Salary & Inflow - 6M,Salary Inflow,Total credit amount in 6m window
+fts_avg_credit_amount_6m,Salary & Inflow - 6M,Salary Inflow,Average credit transaction amount in 6m window
+fts_max_credit_amount_6m,Salary & Inflow - 6M,Salary Inflow,Largest single credit in 6m window
+fts_min_credit_amount_6m,Salary & Inflow - 6M,Salary Inflow,Smallest single credit in 6m window
+fts_salary_to_credit_ratio_6m,Salary & Inflow - 6M,Salary Inflow,total_salary_amount_6m / total_credit_amount_6m
+fts_non_salary_credit_count_6m,Salary & Inflow - 6M,Salary Inflow,Non-salary credit count in 6m window
+fts_non_salary_credit_amount_6m,Salary & Inflow - 6M,Salary Inflow,Non-salary credit amount in 6m window
+fts_max_debit_amount_3m,Outflow - 3M,Salary Inflow,Largest single debit (outflow) transaction in 3m window
+fts_avg_debit_amount_3m,Outflow - 3M,Salary Inflow,Average debit (outflow) transaction amount in 3m window
+fts_max_debit_amount_6m,Outflow - 6M,Salary Inflow,Largest single debit (outflow) transaction in 6m window
+fts_avg_debit_amount_6m,Outflow - 6M,Salary Inflow,Average debit (outflow) transaction amount in 6m window
+fts_sal_amount_variance_3m,Salary Stability,Salary Inflow,VARIANCE of monthly salary totals over 3m (higher = less stable)
+fts_sal_amount_variance_6m,Salary Stability,Salary Inflow,VARIANCE of monthly salary totals over 6m (higher = less stable)
+fts_sal_payday_variance_3m,Salary Stability,Salary Inflow,VARIANCE of salary posting day-of-month over 3m (higher = less consistent pay day)
+fts_sal_payday_variance_6m,Salary Stability,Salary Inflow,VARIANCE of salary posting day-of-month over 6m (higher = less consistent pay day)
+fts_distinct_credit_types_3m,Transaction Mix,Salary Inflow,Distinct credit transaction types in 3m window
+fts_distinct_credit_types_6m,Transaction Mix,Salary Inflow,Distinct credit transaction types in 6m window
+fts_total_txn_count,Transaction Summary,Overall,Total transaction count across full statement
+fts_credit_txn_count,Transaction Summary,Overall,Total credit (inflow) transaction count
+fts_debit_txn_count,Transaction Summary,Overall,Total debit (outflow) transaction count
+fts_total_credit_amount,Transaction Summary,Overall,Total credit amount across full statement
+fts_total_debit_amount,Transaction Summary,Overall,Total debit amount across full statement
+fts_avg_credit_amount,Transaction Summary,Overall,Average credit transaction amount
+fts_avg_debit_amount,Transaction Summary,Overall,Average debit transaction amount
+fts_max_single_credit,Transaction Summary,Overall,Largest single credit transaction
+fts_max_single_debit,Transaction Summary,Overall,Largest single debit transaction
+fts_distinct_tran_types,Transaction Summary,Overall,"Count of distinct transaction types (SAL, OTC, OTD, CHQ, etc.)"
+fts_credit_to_debit_ratio,Transaction Summary,Overall,total_credit_amount / total_debit_amount
+fts_avg_monthly_inflow,Income Indicators,Overall,total_credit_amount / months_with_txn_data
+fts_avg_monthly_outflow,Income Indicators,Overall,total_debit_amount / months_with_txn_data
+fts_non_salary_inflow,Income Indicators,Overall,total_credit_amount - total_salary_amount
+fts_salary_to_total_inflow_ratio,Income Indicators,Overall,total_salary_amount / total_credit_amount
+fts_total_inflow_1m,Balance & Buffer - 1M,Balance Buffer,Sum of credit amounts in 1-month window
+fts_total_outflow_1m,Balance & Buffer - 1M,Balance Buffer,Sum of debit amounts in 1-month window
+fts_net_cashflow_1m,Balance & Buffer - 1M,Balance Buffer,Credits minus debits in 1-month window
+fts_txn_count_1m,Balance & Buffer - 1M,Balance Buffer,Transaction count in 1-month window
+fts_active_days_1m,Balance & Buffer - 1M,Balance Buffer,Distinct days with transactions in 1-month window
+fts_max_single_debit_1m,Balance & Buffer - 1M,Balance Buffer,Largest single debit in 1-month window
+fts_avg_debit_1m,Balance & Buffer - 1M,Balance Buffer,Average debit amount in 1-month window
+fts_buffer_days_1m,Balance & Buffer - 1M,Balance Buffer,closing_balance / (total_outflow_1m / 30) â€” runway in days
+fts_bal_to_outflow_ratio_1m,Balance & Buffer - 1M,Balance Buffer,closing_balance / total_outflow_1m
+fts_inflow_outflow_ratio_1m,Balance & Buffer - 1M,Balance Buffer,total_inflow_1m / total_outflow_1m
+fts_total_inflow_2m,Balance & Buffer - 2M,Balance Buffer,Sum of credit amounts in 2-month window
+fts_total_outflow_2m,Balance & Buffer - 2M,Balance Buffer,Sum of debit amounts in 2-month window
+fts_net_cashflow_2m,Balance & Buffer - 2M,Balance Buffer,Credits minus debits in 2-month window
+fts_txn_count_2m,Balance & Buffer - 2M,Balance Buffer,Transaction count in 2-month window
+fts_active_days_2m,Balance & Buffer - 2M,Balance Buffer,Distinct days with transactions in 2-month window
+fts_max_single_debit_2m,Balance & Buffer - 2M,Balance Buffer,Largest single debit in 2-month window
+fts_avg_debit_2m,Balance & Buffer - 2M,Balance Buffer,Average debit amount in 2-month window
+fts_buffer_days_2m,Balance & Buffer - 2M,Balance Buffer,closing_balance / (total_outflow_2m / 60) â€” runway in days
+fts_bal_to_outflow_ratio_2m,Balance & Buffer - 2M,Balance Buffer,closing_balance / total_outflow_2m
+fts_inflow_outflow_ratio_2m,Balance & Buffer - 2M,Balance Buffer,total_inflow_2m / total_outflow_2m
+fts_total_inflow_3m,Balance & Buffer - 3M,Balance Buffer,Sum of credit amounts in 3-month window
+fts_total_outflow_3m,Balance & Buffer - 3M,Balance Buffer,Sum of debit amounts in 3-month window
+fts_net_cashflow_3m,Balance & Buffer - 3M,Balance Buffer,Credits minus debits in 3-month window
+fts_txn_count_3m,Balance & Buffer - 3M,Balance Buffer,Transaction count in 3-month window
+fts_active_days_3m,Balance & Buffer - 3M,Balance Buffer,Distinct days with transactions in 3-month window
+fts_buffer_days_3m,Balance & Buffer - 3M,Balance Buffer,closing_balance / (total_outflow_3m / 90) â€” runway in days
+fts_bal_to_outflow_ratio_3m,Balance & Buffer - 3M,Balance Buffer,closing_balance / total_outflow_3m
+fts_inflow_outflow_ratio_3m,Balance & Buffer - 3M,Balance Buffer,total_inflow_3m / total_outflow_3m
+fts_bounce_count_3m,Stress & Bounce - 3M,Stress Bounce,Count of RDR (return debit) transactions in 3m
+fts_bounce_amount_3m,Stress & Bounce - 3M,Stress Bounce,Total amount of bounced transactions in 3m
+fts_cheque_return_count_3m,Stress & Bounce - 3M,Stress Bounce,CHT/CHF debits with RETURN in narrative in 3m
+fts_cheque_debit_count_3m,Stress & Bounce - 3M,Stress Bounce,Total cheque debit count in 3m
+fts_cheque_debit_amount_3m,Stress & Bounce - 3M,Stress Bounce,Total cheque debit amount in 3m
+fts_bounce_rate_3m,Stress & Bounce - 3M,Stress Bounce,bounce_count / cheque_debit_count in 3m
+fts_fee_penalty_count_3m,Stress & Bounce - 3M,Stress Bounce,Debits with PENALTY/CHARGE/FEE in narrative in 3m
+fts_fee_penalty_amount_3m,Stress & Bounce - 3M,Stress Bounce,Total fee/penalty debit amount in 3m
+fts_net_negative_months_3m,Stress & Bounce - 3M,Stress Bounce,Months where total outflow exceeded total inflow in 3m
+fts_max_monthly_outflow_3m,Stress & Bounce - 3M,Stress Bounce,Highest single-month outflow in 3m
+fts_bounce_months_3m,Stress & Bounce - 3M,Stress Bounce,Distinct months with at least one bounce in 3m
+fts_bounce_count_6m,Stress & Bounce - 6M,Stress Bounce,Count of RDR transactions in 6m
+fts_bounce_amount_6m,Stress & Bounce - 6M,Stress Bounce,Total bounced amount in 6m
+fts_cheque_return_count_6m,Stress & Bounce - 6M,Stress Bounce,CHT/CHF return debits in 6m
+fts_cheque_debit_count_6m,Stress & Bounce - 6M,Stress Bounce,Total cheque debit count in 6m
+fts_cheque_debit_amount_6m,Stress & Bounce - 6M,Stress Bounce,Total cheque debit amount in 6m
+fts_bounce_rate_6m,Stress & Bounce - 6M,Stress Bounce,bounce_count / cheque_debit_count in 6m
+fts_fee_penalty_count_6m,Stress & Bounce - 6M,Stress Bounce,Fee/penalty debit count in 6m
+fts_fee_penalty_amount_6m,Stress & Bounce - 6M,Stress Bounce,Fee/penalty debit amount in 6m
+fts_net_negative_months_6m,Stress & Bounce - 6M,Stress Bounce,Months where outflow > inflow in 6m
+fts_max_monthly_outflow_6m,Stress & Bounce - 6M,Stress Bounce,Highest single-month outflow in 6m
+fts_bounce_months_6m,Stress & Bounce - 6M,Stress Bounce,Distinct months with bounces in 6m
+fts_bounce_count_12m,Stress & Bounce - 12M,Stress Bounce,Count of RDR transactions in 12m
+fts_bounce_amount_12m,Stress & Bounce - 12M,Stress Bounce,Total bounced amount in 12m
+fts_cheque_return_count_12m,Stress & Bounce - 12M,Stress Bounce,CHT/CHF return debits in 12m
+fts_cheque_debit_count_12m,Stress & Bounce - 12M,Stress Bounce,Total cheque debit count in 12m
+fts_cheque_debit_amount_12m,Stress & Bounce - 12M,Stress Bounce,Total cheque debit amount in 12m
+fts_bounce_rate_12m,Stress & Bounce - 12M,Stress Bounce,bounce_count / cheque_debit_count in 12m
+fts_fee_penalty_count_12m,Stress & Bounce - 12M,Stress Bounce,Fee/penalty debit count in 12m
+fts_fee_penalty_amount_12m,Stress & Bounce - 12M,Stress Bounce,Fee/penalty debit amount in 12m
+fts_net_negative_months_12m,Stress & Bounce - 12M,Stress Bounce,Months where outflow > inflow in 12m
+fts_max_monthly_outflow_12m,Stress & Bounce - 12M,Stress Bounce,Highest single-month outflow in 12m
+fts_bounce_months_12m,Stress & Bounce - 12M,Stress Bounce,Distinct months with bounces in 12m
+fts_drainage_debit_count_1m,Cash Drainage - 1M,Cash Drainage,Debit transaction count in 1-month window
+fts_drainage_txn_count_1m,Cash Drainage - 1M,Cash Drainage,Total transaction count in 1-month window
+fts_debit_dominance_ratio_1m,Cash Drainage - 1M,Cash Drainage,debit_count / total_txn_count in 1m
+fts_debit_amount_share_1m,Cash Drainage - 1M,Cash Drainage,debit_amount / (debit_amount + credit_amount) in 1m
+fts_max_debit_to_balance_1m,Cash Drainage - 1M,Cash Drainage,max_single_debit / closing_balance in 1m
+fts_daily_burn_rate_1m,Cash Drainage - 1M,Cash Drainage,total_outflow_1m / 30 (avg daily outflow)
+fts_runway_days_1m,Cash Drainage - 1M,Cash Drainage,closing_balance / daily_burn_rate_1m (days until zero)
+fts_drainage_debit_count_3m,Cash Drainage - 3M,Cash Drainage,Debit transaction count in 3-month window
+fts_drainage_txn_count_3m,Cash Drainage - 3M,Cash Drainage,Total transaction count in 3-month window
+fts_debit_dominance_ratio_3m,Cash Drainage - 3M,Cash Drainage,debit_count / total_txn_count in 3m
+fts_debit_amount_share_3m,Cash Drainage - 3M,Cash Drainage,debit_amount / (debit_amount + credit_amount) in 3m
+fts_max_debit_to_balance_3m,Cash Drainage - 3M,Cash Drainage,max_single_debit / closing_balance in 3m
+fts_daily_burn_rate_3m,Cash Drainage - 3M,Cash Drainage,total_outflow_3m / 90 (avg daily outflow)
+fts_runway_days_3m,Cash Drainage - 3M,Cash Drainage,closing_balance / daily_burn_rate_3m (days until zero)
+fts_prior_outflow_1m,Outflow Acceleration,Cash Drainage,Total debit amount in prior 1-month window (month -2 to -1)
+fts_outflow_acceleration_1m,Outflow Acceleration,Cash Drainage,(recent_outflow - prior_outflow) / prior_outflow for 1m
+fts_prior_outflow_3m,Outflow Acceleration,Cash Drainage,Total debit amount in prior 3-month window (month -6 to -3)
+fts_outflow_acceleration_3m,Outflow Acceleration,Cash Drainage,(recent_outflow - prior_outflow) / prior_outflow for 3m
+fts_worst_monthly_net_3m,Monthly Drainage Trend,Cash Drainage,Lowest monthly net cashflow (most negative) in 3m
+fts_drainage_avg_monthly_outflow_3m,Monthly Drainage Trend,Cash Drainage,Average monthly outflow over 3m
+fts_avg_monthly_net_3m,Monthly Drainage Trend,Cash Drainage,Average monthly net cashflow over 3m
