@@ -32,10 +32,10 @@ data:
   extraction_date: "2022-07-01"   # date the snapshot was extracted (TBC-05)
 
 expected_counts:               # Section 1.2; Step 1 MUST reproduce exactly (GOOD + BAD only)
-  ALL:       {records: 15090, bads: 1377}
+  ALL:       {records: 15235, bads: 1389}
   DEV:       {records: 10708, bads: 994}
-  DEV_EARLY: {records: 7663,  bads: 754}
-  DEV_LATE:  {records: 3045,  bads: 240}
+  DEV_EARLY: {records: 7663,  bads: 754} 
+  DEV_LATE:  {records: 3045,  bads: 240} #
   OOT:       {records: 4527,  bads: 395}   # 2026-10-28 (owner): was 4382/383; +145 (12 Bads) APPRECDDATE in OOT, APPROVEDATE >= 2025-07-01, added by FWD/STRESS append [E13-oot-count]
 
 file_type:                     # Appendix G; TBC-16 (column names). Evaluated as at APPROVEDATE
