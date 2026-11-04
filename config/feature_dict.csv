@@ -1,7 +1,7 @@
 feature,role,source,dtype,description,special_codes,special_meaning,available_at_decision,compliance_ok,expected_direction,definition_change_date,rule
 Reference_Number,KEY,,categorical,,,,Y,,?,,column_roles.key
 aecb_CreatedON,FEATURE,AECB,categorical,,,,Y,Y,?,,prefix:aecb_
-aecb_AECB_Score,FEATURE,AECB,numerical,,,,Y,Y,?,,prefix:aecb_
+aecb_AECB_Score,FEATURE,AECB,numerical,,,,Y,N,?,,prefix:aecb_
 aecb_score_missing_flag,FEATURE,AECB,numerical,,,,Y,Y,?,,prefix:aecb_
 aecb_Rating,FEATURE,AECB,categorical,,,,Y,Y,?,,prefix:aecb_
 aecb_EVER_AL_FLAG,FEATURE,AECB,numerical,,,,Y,Y,?,,prefix:aecb_

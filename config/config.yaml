@@ -6,7 +6,7 @@ databricks:
   catalog: "mis_automation"
   schema: "datascience_pbg"
   volume: pbg_cc_ascore
-  artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output"    # /Volumes/<catalog>/<schema>/acard_artifacts
+  artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/variant_nofts"    # update for nofts 
   mlflow_experiment: "/Users/zheng.zhu@rakbank.ae/acard_scorecard"
 
 columns:
@@ -83,7 +83,11 @@ target_definition:             # TBC-04 / TBC-05
   bad_bucket_min: 4            # bucket 4+ (90+ DPD) = BAD
   good_bucket: 0               # bucket 0 only = GOOD
   indeterminate_buckets: [1, 3]   # buckets 1-3 (1-89 DPD) = INDETERMINATE
-  
+
+feature_scope: {exclude_prefixes: ["fts_"]}      # update for nofts
+tables: {master: acard_master, feature_log: acard_feature_log_nofts}   # update for nofts master shared read-only; separate feature log
+shared_inputs: {folds_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/folds"}  # update for nofts
+ 
 windows:                       # [start, end)
   DEV:    ["2022-07-01", "2025-01-01"]
   OOT:    ["2025-01-01", "2025-07-01"]
@@ -161,7 +165,7 @@ runtime:
 review_files:                       # filled by people, read by code
   l1_review: config/l1_review.csv           # E5: feature, review_type(LEAK|DIRECTION), decision(KEEP|DROP), reason, reviewer, date
   psi_decisions: config/psi_decisions.csv   # E7: feature, cause_type, evidence, policy_change_date, decision, reviewer, date
-  signoff: config/signoff.yaml              # E12/E13/E16 sign-offs
+  signoff: config/signoff.yaml              # E12/E13/E16 sign-offs # update for nofts
   reason_code_map: config/reason_code_map.csv  # E13/E18: feature, reason_group, text_en, text_ar
   threshold_changes: config/threshold_changes.csv
 
@@ -177,7 +181,7 @@ reject_inference:
   data: none                        # none | features_only | bureau_outcome (TBC-07)
 
 registry:
-  version: "1.0.0"
+  version: "1.0.0-nofts"
   register_in_uc: false             # true = register A/B/C in Unity Catalog with alias "locked"
 
 monitoring:                         # Chapter 14 defaults

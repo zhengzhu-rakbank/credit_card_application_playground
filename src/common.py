@@ -79,6 +79,112 @@ def git_commit(root: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Run variants: config path widget, table names, shared folds, feature scope
+# Defaults (no widget value, keys absent) reproduce the main run exactly.
+# ---------------------------------------------------------------------------
+
+DEFAULT_CONFIG_REL = "config/config.yaml"
+_TABLE_DEFAULTS = {"master": "acard_master", "feature_log": "acard_feature_log"}
+
+
+def resolve_config_path(project_root: str, config_path: Optional[str] = None) -> str:
+    """Absolute config path; relative paths are resolved against *project_root*."""
+    p = (config_path or "").strip() or DEFAULT_CONFIG_REL
+    if not os.path.isabs(p):
+        p = os.path.join(project_root, p)
+    return os.path.realpath(p)
+
+
+def is_default_config(project_root: str, config_path: Optional[str]) -> bool:
+    """True if *config_path* resolves to the main run's config/config.yaml."""
+    return resolve_config_path(project_root, config_path) == resolve_config_path(project_root, None)
+
+
+def config_path_widget(dbutils, default: str = DEFAULT_CONFIG_REL) -> str:
+    """Create (if needed) and read the notebook widget ``config_path``."""
+    try:
+        dbutils.widgets.text("config_path", default, "config_path")
+    except Exception:
+        pass
+    try:
+        v = dbutils.widgets.get("config_path")
+    except Exception:
+        v = ""
+    return (v or "").strip() or default
+
+
+def table_name(cfg: dict, key: str) -> str:
+    """Fully qualified table name from ``config.tables.<key>`` (default: main-run names)."""
+    t = (cfg.get("tables") or {}).get(key) or _TABLE_DEFAULTS[key]
+    db = cfg["databricks"]
+    return f"{db['catalog']}.{db['schema']}.{t}"
+
+
+def folds_shared(cfg: dict) -> bool:
+    """True if folds are read from ``shared_inputs.folds_root`` (read-only)."""
+    return bool((cfg.get("shared_inputs") or {}).get("folds_root"))
+
+
+def folds_dir(cfg: dict, must_exist: bool = False) -> str:
+    """Folder E5-E11 read folds from: ``shared_inputs.folds_root`` if set, else <artifacts_root>/folds."""
+    root = (cfg.get("shared_inputs") or {}).get("folds_root")
+    d = "/" + str(root).strip().lstrip("/").rstrip("/") if root else os.path.join(artifacts_path(cfg), "folds")
+    if must_exist and not os.path.isdir(d):
+        raise FileNotFoundError(f"folds folder not found: {d} (check shared_inputs.folds_root)")
+    return d
+
+
+def scope_exclude_prefixes(cfg: dict) -> tuple:
+    """Lower-cased ``feature_scope.exclude_prefixes`` (empty tuple = no exclusion)."""
+    return tuple(str(p).lower() for p in ((cfg.get("feature_scope") or {}).get("exclude_prefixes") or []))
+
+
+def is_scope_excluded(feature: str, cfg: dict) -> bool:
+    """True if *feature* starts with a prefix in ``feature_scope.exclude_prefixes``."""
+    pref = scope_exclude_prefixes(cfg)
+    return bool(pref) and str(feature).lower().startswith(pref)
+
+
+def _norm_root(p: str) -> str:
+    return "/" + str(p).strip().strip("/")
+
+
+def assert_variant_isolated(cfg: dict, project_root: str, config_path: str) -> None:
+    """A variant (config_path != default) must not share artifacts_root or the feature log
+    with the main run (config/config.yaml)."""
+    if is_default_config(project_root, config_path):
+        return
+    base = load_config(resolve_config_path(project_root, None))
+    assert _norm_root(artifacts_path(cfg)) != _norm_root(artifacts_path(base)), (
+        f"Variant config {config_path} uses the main run's artifacts_root {artifacts_path(base)}")
+    assert table_name(cfg, "feature_log") != table_name(base, "feature_log"), (
+        f"Variant config {config_path} uses the main run's feature log {table_name(base, 'feature_log')}")
+
+
+def assert_table_writable(cfg: dict, key: str, project_root: str, config_path: str) -> str:
+    """Return the table name for *key*; raise if a variant would write a main-run table."""
+    name = table_name(cfg, key)
+    if not is_default_config(project_root, config_path):
+        base = load_config(resolve_config_path(project_root, None))
+        if name == table_name(base, key):
+            raise PermissionError(
+                f"Variant config {config_path} must not write the main run's table {name} "
+                f"(tables.{key}); it is shared read-only.")
+    return name
+
+
+def load_run_config(project_root: str, dbutils=None, config_path: Optional[str] = None) -> Tuple[dict, str]:
+    """Load the config for this run: explicit *config_path*, else widget ``config_path``,
+    else config/config.yaml.  Checks variant isolation.  Returns ``(cfg, absolute_path)``."""
+    if config_path is None and dbutils is not None:
+        config_path = config_path_widget(dbutils)
+    path = resolve_config_path(project_root, config_path)
+    cfg = load_config(path)
+    assert_variant_isolated(cfg, project_root, path)
+    return cfg, path
+
+
+# ---------------------------------------------------------------------------
 # Label guard  (spec 2.2 — mandatory rule)
 # ---------------------------------------------------------------------------
 
