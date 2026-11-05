@@ -6,7 +6,6 @@ databricks:
   catalog: "mis_automation"
   schema: "datascience_pbg"
   volume: pbg_cc_ascore
-  main_artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1"    # /Volumes/<catalog>/<schema>/acard_artifacts
   artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts"    # /Volumes/<catalog>/<schema>/
   mlflow_experiment: "/Users/zheng.zhu@rakbank.ae/acard_scorecard"
 
@@ -31,8 +30,6 @@ column_roles:                  # Section 2.5; list ONLY non-feature columns (act
 data:
   raw_snapshot_table: "mis_automation.ds_exploration.acard_cc_data"
   extraction_date: "2022-07-01"   # date the snapshot was extracted (TBC-05)
-
-tables: {master: acard_master, feature_log: acard_feature_log_v101}
 
 expected_counts:               # Section 1.2; Step 1 MUST reproduce exactly (GOOD + BAD only)
   ALL:       {records: 15198, bads: 1403}
@@ -88,7 +85,9 @@ target_definition:             # TBC-04 / TBC-05
   indeterminate_buckets: [1, 3]   # buckets 1-3 (1-89 DPD) = INDETERMINATE
 
 feature_scope: {exclude_prefixes: ["fts_"]}      # update for nofts
-tables: {master: acard_master_v101, feature_log: acard_feature_log_v101_nofts}   # update for nofts master shared read-only; separate feature log
+tables: {master: acard_master, feature_log: acard_feature_log_v101_nofts, oot_predictions:    acard_oot_predictions_v101_nofts, fwd_predictions: acard_fwd_predictions_v101_nofts, stress_predictions: acard_stress_predictions_v101_nofts}   # update for nofts master shared read-only; separate feature log
+main_tables: {master: acard_master, feature_log: acard_feature_log_v101}
+main_artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1"    # /Volumes/<catalog>/<schema>/acard_artifacts
 shared_inputs: {folds_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/folds"}  # update for nofts
   
 windows:                       # [start, end)

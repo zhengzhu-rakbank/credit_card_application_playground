@@ -1,0 +1,21 @@
+feature,reason_group,text_en,text_ar,source,dict_description,iv_dev,final_A,trend,suggested_by
+aecb_distinct_enquirer_count_90d,RC01,Number of recent credit applications,,AECB,Distinct enquirers L90D,0.304317,Y,non_monotonic,DICTIONARY
+aecb_L30D_NRAK_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK inquiries L30D,0.219026,Y,non_monotonic,DICTIONARY
+aecb_days_since_last_inquiry,RC01,Number of recent credit applications,,AECB,Days since last inquiry,0.181638,N,non_monotonic,DICTIONARY
+aecb_L3M_NRAK_PL_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK PL inquiries L3M,0.07116,N,non_monotonic,DICTIONARY
+aecb_L30D_NRAK_PLAL_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK PL/AL inquiries L30D,0.048231,N,non_monotonic,DICTIONARY
+aecb_Services_OVERDUE,RC02,Missed or late payments on accounts,,AECB,Overdue for services (AccType=85),0.058518,Y,non_monotonic,DICTIONARY
+aecb_telco_utility_dpd_count_12m,RC02,Missed or late payments on accounts,,AECB,Service DPD months L12M,0.036623,N,non_monotonic,DICTIONARY
+aecb_max_card_utilization,RC03,Use of available credit card limits,,AECB,Max single-card util (%),0.241529,N,non_monotonic,DICTIONARY
+aecb_L24M_cnt_prov_CC_90Util,RC03,Use of available credit card limits,,AECB,Months with CC util>=90% in L24M,0.19821,Y,non_monotonic,DICTIONARY
+aecb_Min_CC_utilization,RC03,Use of available credit card limits,,AECB,Min CC utilization across providers,0.136654,Y,valley,DICTIONARY
+aecb_L24M_cnt_prov_CC_100Util,RC03,Use of available credit card limits,,AECB,Months with CC util>=100% in L24M,0.096271,Y,non_monotonic,DICTIONARY
+aecb_active_unsecured_exposure_amt,RC04,Level of existing debt and repayments,,AECB,Unsecured OS,0.256175,Y,non_monotonic,DICTIONARY
+aecb_revolving_balance_to_income,RC04,Level of existing debt and repayments,,AECB,Revolving OS/income (%),0.139097,N,valley,DICTIONARY
+aecb_total_monthly_payment_amt,RC04,Level of existing debt and repayments,,AECB,Total obligation all active,0.047454,N,non_monotonic,DICTIONARY
+aecb_recent_limit_granted_amt,RC04,Level of existing debt and repayments,,AECB,Limit for L6M facilities,0.043947,N,non_monotonic,DICTIONARY
+aecb_CC_MOB_recent,RC05,Length of credit history,,AECB,MOB of most recent CC contract,0.040898,N,non_monotonic,DICTIONARY
+aecb_months_of_history_available,RC05,Length of credit history,,AECB,History span (months),0.037679,Y,non_monotonic,DICTIONARY
+aecb_last_reported_income,RC06,Reported income,,AECB,Most recent income,0.122611,Y,valley,DICTIONARY
+aecb_total_payment_to_income,RC06,Reported income,,AECB,Payment/income (%),0.062758,N,ascending,DICTIONARY
+AGE,RC07,Applicant age,,OTHER,,0.029101,Y,non_monotonic,NAME_ONLY

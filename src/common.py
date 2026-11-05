@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -46,6 +47,163 @@ def config_hash(cfg: dict) -> str:
 def artifacts_path(cfg: dict) -> str:
     """Return the base artifacts path from config."""
     return "/" + cfg["databricks"]["artifacts_root"].lstrip("/")
+
+
+# ---------------------------------------------------------------------------
+# Run scope: table names, shared inputs, variant guard (variant support, P1)
+# Every key is optional; when absent the behaviour is exactly the main model's.
+# ---------------------------------------------------------------------------
+
+DEFAULT_TABLES = {                                   # main model tables (config.tables.<key> overrides)
+    "master": "acard_master",
+    "feature_log": "acard_feature_log",
+    "oot_predictions": "acard_oot_predictions",       # E13 case-level outputs
+    "fwd_predictions": "acard_fwd_predictions",
+    "stress_predictions": "acard_stress_predictions",
+}
+SCOPE_EXCLUDED_REASON = "SOURCE_EXCLUDED_BY_SCOPE"
+
+
+def _abs_path(p: str) -> str:
+    return "/" + str(p).strip().strip("/")
+
+
+def _is_under(path: str, root: str) -> bool:
+    p, r = _abs_path(path), _abs_path(root)
+    return p == r or p.startswith(r + "/")
+
+
+def table_name(cfg: dict, key: str) -> str:
+    """Fully qualified table for *key* ('master' or 'feature_log'): config.tables.<key>, default = main table."""
+    if key not in DEFAULT_TABLES:
+        raise KeyError(f"Unknown table key {key!r}; expected one of {sorted(DEFAULT_TABLES)}")
+    name = (cfg.get("tables") or {}).get(key) or DEFAULT_TABLES[key]
+    return f"{cfg['databricks']['catalog']}.{cfg['databricks']['schema']}.{name}"
+
+
+def main_table_name(cfg: dict, key: str) -> str:
+    """Fully qualified main-model table for *key* (the default name), used by the variant guard."""
+    return f"{cfg['databricks']['catalog']}.{cfg['databricks']['schema']}.{DEFAULT_TABLES[key]}"
+
+
+def main_artifacts_path(cfg: dict) -> str:
+    """Main model artefacts root: top-level main_artifacts_root, else databricks.main_artifacts_root,
+    else this run's own artifacts_root (i.e. not a variant run)."""
+    root = cfg.get("main_artifacts_root") or (cfg.get("databricks") or {}).get("main_artifacts_root")
+    return _abs_path(root) if root else artifacts_path(cfg)
+
+
+def is_variant(cfg: dict) -> bool:
+    """True when artifacts_root differs from main_artifacts_root."""
+    return _abs_path(artifacts_path(cfg)) != main_artifacts_path(cfg)
+
+
+def folds_path(cfg: dict) -> str:
+    """Folds directory: shared_inputs.folds_root when set (read-only), else <artifacts_root>/folds."""
+    root = (cfg.get("shared_inputs") or {}).get("folds_root")
+    return _abs_path(root) if root else os.path.join(artifacts_path(cfg), "folds")
+
+
+def variant_guard(cfg: dict, shared_module: bool = False, write_tables: Tuple[str, ...] = ()) -> bool:
+    """Stop unsafe variant runs. Returns True for a variant run, False for the main model.
+
+    shared_module=True (E2/E3: s01a, s01b, s02) raises on a variant run, because those outputs are shared.
+    For other modules: artifacts_root must differ from (and not sit under) main_artifacts_root, and
+    tables.feature_log must differ from the main feature log, so nothing is written to main outputs.
+    write_tables: further config.tables keys this module writes; each must also differ from the main table.
+    """
+    if not is_variant(cfg):
+        return False
+    if shared_module:
+        raise RuntimeError("Variant run: E2/E3 are shared with the main model "
+                           f"(artifacts_root={artifacts_path(cfg)}, main_artifacts_root={main_artifacts_path(cfg)}). "
+                           "Do not run this module on the variant branch.")
+    art, main = _abs_path(artifacts_path(cfg)), main_artifacts_path(cfg)
+    assert art != main, "Variant guard: artifacts_root equals main_artifacts_root"
+    assert not _is_under(art, main), f"Variant guard: artifacts_root {art} is inside main_artifacts_root {main}"
+    for key in ("feature_log", *write_tables):
+        tbl, main_tbl = table_name(cfg, key), main_table_name(cfg, key)
+        assert tbl != main_tbl, (f"Variant guard: tables.{key} ({tbl}) is the main model's table; "
+                                 f"set a variant name in config.tables.{key}")
+    return True
+
+
+def git_branch(root: str) -> str:
+    """Current branch of the Git folder at *root*: .git/HEAD if readable, else the Repos API; 'unknown' otherwise."""
+    try:
+        head = open(os.path.join(root, ".git", "HEAD")).read().strip()
+        return head.split("refs/heads/", 1)[1] if head.startswith("ref:") else f"detached@{head[:12]}"
+    except Exception:
+        pass
+    try:
+        from databricks.sdk import WorkspaceClient
+        w = WorkspaceClient()
+        oid = w.workspace.get_status(root[len("/Workspace"):] if root.startswith("/Workspace/") else root).object_id
+        return w.repos.get(oid).branch or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def print_run_context(cfg: dict, root: str) -> dict:
+    """Print branch, artefact roots, table names and registry version at the start of a notebook."""
+    ctx = {
+        "branch": git_branch(root),
+        "variant": is_variant(cfg),
+        "artifacts_root": artifacts_path(cfg),
+        "main_artifacts_root": main_artifacts_path(cfg),
+        "master_table": table_name(cfg, "master"),
+        "feature_log_table": table_name(cfg, "feature_log"),
+        "folds_dir": folds_path(cfg),
+        "registry_version": (cfg.get("registry") or {}).get("version"),
+    }
+    print("Run context")
+    for k, v in ctx.items():
+        print(f"  {k:<20}: {v}")
+    return ctx
+
+
+def scope_exclusions(feat_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """FEATURE rows excluded by config.feature_scope.exclude_prefixes (E4, L0_reason SOURCE_EXCLUDED_BY_SCOPE).
+
+    basis = 'prefix'      : name starts with an excluded prefix (case-insensitive; same matching as
+                            assign_column_roles / column_roles.feature_prefixes).
+    basis = 'source'      : feature_dict source equals the prefix stem (e.g. 'fts_' -> FTS).
+    basis = 'description' : feature_dict description / derivation refers to the stem (e.g. 'FTS', 'fts_x').
+    basis = 'name'        : the stem appears elsewhere in the name (e.g. 'ratio_fts_x').
+    Empty result when no prefixes are configured (main model).
+    """
+    prefixes = tuple(str(p).lower() for p in ((cfg.get("feature_scope") or {}).get("exclude_prefixes") or []) if p)
+    cols = ["feature", "basis", "evidence"]
+    if not prefixes:
+        return pd.DataFrame(columns=cols)
+    stems = sorted({p.strip("_") for p in prefixes if p.strip("_")})
+    stem_rx = re.compile(r"(?<![a-z0-9])(" + "|".join(map(re.escape, stems)) + r")(?![a-z])", re.I) if stems else None
+    text_cols = [c for c in ("description", "derivation") if c in feat_df.columns]
+    out = []
+    for _, r in feat_df.iterrows():
+        name = str(r["feature"])
+        src = str(r.get("source", "")).strip().lower()
+        if name.lower().startswith(prefixes):
+            out.append((name, "prefix", next(p for p in prefixes if name.lower().startswith(p))))
+        elif src and src != "nan" and src in stems:
+            out.append((name, "source", f"source={r.get('source')}"))
+        elif stem_rx is not None and any(
+                pd.notna(r.get(c)) and stem_rx.search(str(r.get(c))) for c in text_cols):
+            c = next(c for c in text_cols if pd.notna(r.get(c)) and stem_rx.search(str(r.get(c))))
+            out.append((name, "description", f"{c}: {str(r.get(c))[:120]}"))
+        elif stem_rx is not None and stem_rx.search(name.replace("_", " ")):
+            out.append((name, "name", name))
+    return pd.DataFrame(out, columns=cols)
+
+
+def has_fts_data(df: pd.DataFrame, ref_col: str = "FTS_Ref_No") -> pd.Series:
+    """Segment flag for variant reporting only (never a feature): 'Y' if *ref_col* is non-null and
+    non-empty after trim, else 'N'. Read-only on *df*."""
+    if ref_col not in df.columns:
+        raise KeyError(f"has_fts_data: column {ref_col!r} not in data")
+    s = df[ref_col]
+    ok = s.notna() & s.astype(str).str.strip().ne("")
+    return pd.Series(np.where(ok, "Y", "N"), index=df.index, name="has_fts_data")
 
 
 def find_project_root(start: str) -> str:
