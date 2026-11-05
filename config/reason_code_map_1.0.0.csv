@@ -1,0 +1,32 @@
+feature,reason_group,text_en,text_ar,source,dict_description,iv_dev,final_A,trend,suggested_by
+aecb_distinct_enquirer_count_90d,RC01,Number of recent credit applications,,AECB,Distinct enquirers L90D,0.298324,Y,non_monotonic,DICTIONARY
+aecb_L30D_NRAK_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK inquiries L30D,0.219487,Y,non_monotonic,DICTIONARY
+aecb_days_since_last_inquiry,RC01,Number of recent credit applications,,AECB,Days since last inquiry,0.173177,N,non_monotonic,DICTIONARY
+aecb_L3M_NRAK_PL_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK PL inquiries L3M,0.064522,N,non_monotonic,DICTIONARY
+aecb_L30D_NRAK_PLAL_NOF_ENQURY,RC01,Number of recent credit applications,,AECB,Non-RAK PL/AL inquiries L30D,0.044675,N,non_monotonic,DICTIONARY
+aecb_Services_OVERDUE,RC02,Missed or late payments on accounts,,AECB,Overdue for services (AccType=85),0.054064,Y,non_monotonic,DICTIONARY
+aecb_telco_utility_dpd_count_12m,RC02,Missed or late payments on accounts,,AECB,Service DPD months L12M,0.033849,N,non_monotonic,DICTIONARY
+aecb_max_card_utilization,RC03,Use of available credit card limits,,AECB,Max single-card util (%),0.237418,Y,non_monotonic,DICTIONARY
+aecb_L24M_cnt_prov_CC_90Util,RC03,Use of available credit card limits,,AECB,Months with CC util>=90% in L24M,0.197547,N,non_monotonic,DICTIONARY
+aecb_Min_CC_utilization,RC03,Use of available credit card limits,,AECB,Min CC utilization across providers,0.136742,Y,valley,DICTIONARY
+aecb_L24M_cnt_prov_CC_100Util,RC03,Use of available credit card limits,,AECB,Months with CC util>=100% in L24M,0.099912,Y,non_monotonic,DICTIONARY
+aecb_active_unsecured_exposure_amt,RC04,Level of existing debt and repayments,,AECB,Unsecured OS,0.23472,Y,non_monotonic,DICTIONARY
+aecb_revolving_balance_to_income,RC04,Level of existing debt and repayments,,AECB,Revolving OS/income (%),0.125262,N,valley,DICTIONARY
+aecb_total_monthly_payment_amt,RC04,Level of existing debt and repayments,,AECB,Total obligation all active,0.03697,N,non_monotonic,DICTIONARY
+aecb_recent_limit_granted_amt,RC04,Level of existing debt and repayments,,AECB,Limit for L6M facilities,0.036883,N,non_monotonic,DICTIONARY
+aecb_CC_MOB_recent,RC05,Length of credit history,,AECB,MOB of most recent CC contract,0.037893,N,non_monotonic,DICTIONARY
+aecb_file_age_months,RC05,Length of credit history,,AECB,Months from first-ever contract to bureau pull,0.026344,Y,non_monotonic,DICTIONARY
+fts_max_debit_to_balance_1m,RC06,Account balance levels and changes,,FTS,max_single_debit / closing_balance in 1m,0.049129,Y,non_monotonic,DICTIONARY
+fts_balance_change_pct,RC06,Account balance levels and changes,,FTS,Avg month-on-month balance % change over last 3 months (derived from end-of-month balances),0.020992,N,valley,DICTIONARY
+fts_overall_avg_salary_amount,RC07,Salary payments into the account,,FTS,Average individual salary transaction amount,0.093233,Y,non_monotonic,DICTIONARY
+fts_salary_to_credit_ratio_3m,RC07,Salary payments into the account,,FTS,total_salary_amount_3m / total_credit_amount_3m,0.091185,Y,non_monotonic,DICTIONARY
+fts_min_credit_amount_3m,RC08,Pattern of money paid into and out of the account,,FTS,Smallest single credit in 3m window,0.109527,Y,non_monotonic,DICTIONARY
+fts_avg_credit_amount,RC08,Pattern of money paid into and out of the account,,FTS,Average credit transaction amount,0.107659,Y,non_monotonic,DICTIONARY
+fts_debit_dominance_ratio_3m,RC08,Pattern of money paid into and out of the account,,FTS,debit_count / total_txn_count in 3m,0.067969,Y,non_monotonic,DICTIONARY
+fts_max_credit_amount_3m,RC08,Pattern of money paid into and out of the account,,FTS,Largest single credit in 3m window,0.049784,N,non_monotonic,DICTIONARY
+fts_distinct_credit_types_3m,RC08,Pattern of money paid into and out of the account,,FTS,Distinct credit transaction types in 3m window,0.046138,N,peak,DICTIONARY
+fts_worst_monthly_net_3m,RC08,Pattern of money paid into and out of the account,,FTS,Lowest monthly net cashflow (most negative) in 3m,0.042663,Y,non_monotonic,DICTIONARY
+fts_fee_penalty_amount_12m,RC08,Pattern of money paid into and out of the account,,FTS,Fee/penalty debit amount in 12m,0.029064,N,non_monotonic,DICTIONARY
+aecb_last_reported_income,RC09,Reported income,,AECB,Most recent income,0.106249,Y,valley,DICTIONARY
+aecb_income_missing_flag,RC09,Reported income,,AECB,1 if no income data,0.051057,Y,non_monotonic,DICTIONARY
+AGE,RC10,Applicant age,,OTHER,,0.027681,Y,non_monotonic,NAME_ONLY

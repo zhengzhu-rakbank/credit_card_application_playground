@@ -6,7 +6,7 @@ databricks:
   catalog: "mis_automation"
   schema: "datascience_pbg"
   volume: pbg_cc_ascore
-  artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output"    # /Volumes/<catalog>/<schema>/acard_artifacts
+  artifacts_root: "Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1"    # /Volumes/<catalog>/<schema>/acard_artifacts
   mlflow_experiment: "/Users/zheng.zhu@rakbank.ae/acard_scorecard"
 
 columns:
@@ -31,12 +31,14 @@ data:
   raw_snapshot_table: "mis_automation.ds_exploration.acard_cc_data"
   extraction_date: "2022-07-01"   # date the snapshot was extracted (TBC-05)
 
+tables: {master: acard_master, feature_log: acard_feature_log_v101}
+
 expected_counts:               # Section 1.2; Step 1 MUST reproduce exactly (GOOD + BAD only)
-  ALL:       {records: 15235, bads: 1389}
-  DEV:       {records: 10708, bads: 994}
-  DEV_EARLY: {records: 7663,  bads: 754} 
-  DEV_LATE:  {records: 3045,  bads: 240} #
-  OOT:       {records: 4527,  bads: 395}   # 2026-10-28 (owner): was 4382/383; +145 (12 Bads) APPRECDDATE in OOT, APPROVEDATE >= 2025-07-01, added by FWD/STRESS append [E13-oot-count]
+  ALL:       {records: 15198, bads: 1403}
+  DEV:       {records: 10689, bads: 1009}
+  DEV_EARLY: {records: 7664,  bads: 779} 
+  DEV_LATE:  {records: 3025,  bads: 230} #
+  OOT:       {records: 4509,  bads: 394}   # 2026-10-28 (owner): was 4382/383; +145 (12 Bads) APPRECDDATE in OOT, APPROVEDATE >= 2025-07-01, added by FWD/STRESS append [E13-oot-count]
 
 file_type:                     # Appendix G; TBC-16 (column names). Evaluated as at APPROVEDATE
   source_column: aecb_file_type_revised          # set if the source already has a file-type column (values THICK / NO_FILE / THIN)
@@ -177,7 +179,7 @@ reject_inference:
   data: none                        # none | features_only | bureau_outcome (TBC-07)
 
 registry:
-  version: "1.0.0"
+  version: "1.0.1"
   register_in_uc: false             # true = register A/B/C in Unity Catalog with alias "locked"
 
 monitoring:                         # Chapter 14 defaults
