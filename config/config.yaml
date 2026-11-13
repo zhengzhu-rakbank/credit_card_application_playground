@@ -188,16 +188,43 @@ early_delinquency:                  # Chapter 11 / 14 (report only); actual sour
 
 reject_inference:
   table: "mis_automation.datascience_pbg.acard_master_ri"
-  universe:                                   # agreed definition of score-declined applications (<who>, <date>)
-    risk_segment_column: dectec_output_risk_segmentation
-    risk_segment_values: ["ELEVATED RISK", "SIGNIFICANT RISK"]   # compared after trim + UPPER
-    decision_column: final_decision
-    decision_values: ["DECLINE"]                                 # compared after trim + UPPER
-  population_filters_mode: apply              # apply config.population_filters (application-time rules) and report removals
-  reason_column: dectec_all_reason_descriptions   # report only; not used to select the universe
-  reason_delimiter: "|"                       # confirm in Step 0
+  prefiltered: "Thin file and internal score declined applied when the table was built (2026-11-11)"
+  reason_column: dectec_all_reason_descriptions
+  reason_delimiter: "|"                  # confirm from step 1
+  reason_match: exact                    # exact = whole reason text after trim/UPPER; contains = keyword match
+  decision_types:                        # values compared after trim + UPPER; EXAMPLES ONLY - replace with your actual reasons
+    score_reject: ["INTERNAL SCORE DECLINE"]                       # INCLUDED: declined by the old application score
+    replaceable_rule: []          # candidate after policy review: MINIMUM AECB SCORE REQUIREMENT NOT MET
+    hard_policy:                  # D-coded; regulatory or never approvable
+      - "CENTRAL BANK REQUIREMENTS - DBR"
+      - "CENTRAL BANK REQUIREMENTS - MIN INCOME"
+      - "NMF OR NFL COMPANIES IN ALOC"
+      - "RESTRICTED INDUSTRY"
+      - "CUSTOMERS WITH ACTIVE/CLOSED/ON HOLD COURT CASE"
+      - "LENDING TO EXTERNAL AUDITORS"
+      - "SANCTIONED NATIONALITY"
+    retained_rule:                # D-coded; affordability and bureau derogatory rules that stay after go-live
+      - "MIN CARD LIMIT"
+      - "STRESS DBR GT 50%"
+      - "STRESS DBR EXCEEDS 50%"
+      - "NET SALARY DBR EXCEEDS 70"
+      - "CASE DECLINED DUE TO AR BREACH (GT 100%)"
+      - "CASE DECLINED DUE TO AR BREACH (>110%)"
+      - "DELINQUENT CURRENT MONTH EXTERNAL"
+      - "BUREAU - WORST STATUS L24M"
+      - "WORST STATUS L24M IN DECEASED ,LEFT COUNTRY,COURT,DEFAULT,SETTLEMENT,ARRANGEMENT OR RESTRUCTURED LN"
+      - "EXTERNAL WRITE-OFF"
+      - "CHEQUE DDS RETURNED"
+      - "HOUSE CHEQUE /DDS RETURN IN LATEST 3 MONTHS"
+      - "PRODUCT TYPE-RESTRUCTURED"
+      - "90DPD ON SCNDRY BNK CC OR LN 12M AND LAST 3M IRREG"
+      - "MORE THAN 180 DPD IN MORE THAN 6 MONTHS"
+    not_a_decline: []
+    manual_override: []
+  include_groups: [score_reject]
+  multi_reason_rule: exclude_if_any_excluded   # any reason in retained_rule / hard_policy / not_a_decline -> excluded
+  unclassified_action: stop                     # an unmapped reason stops the run and is listed
   output_folder: reports/ri
-
 
 registry:
   version: "1.0.1-nofts"
