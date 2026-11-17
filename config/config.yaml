@@ -176,7 +176,34 @@ early_delinquency:                  # Chapter 11 / 14 (report only); actual sour
   min_mob: 3
 
 reject_inference:
-  data: none                        # none | features_only | bureau_outcome (TBC-07)
+  table: "mis_automation.datascience_pbg.acard_master_ri_fts"      # declined applications incl. FTS features
+  overlap_check_table: "mis_automation.datascience_pbg.acard_master_ri"   # table used earlier for the no-FTS run; overlap check only
+  universe:                                   # agreed definition (<who>, <date>)
+    period_column: application_date
+    switch_date: "2025-08-01"                 # inclusive
+    decision_column: final_decision
+    decision_values: ["Decline"]              # compared after trim + UPPER
+    require_decision: true                    # applies to every rule
+    reason_column: dectec_all_reason_descriptions
+    reason_contains: "INTERNAL SCORE DECLINE" # substring, after UPPER (2026-11-16 owner: spaces, not underscores)
+    risk_segment_column: dectec_output_risk_segmentation
+    risk_segment_values: ["ELEVATED RISK"]    # after trim + UPPER
+    # before switch_date: rule A (reason); from switch_date: rule B (risk segment) when populated, else rule A (B_FALLBACK)
+  models:                                     # both read-only
+    - {name: FTS,   registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json"}
+    - {name: NOFTS, registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts/model_registry.json"}
+  fts_flag_column: [FTS_Ref_No, fts_ref_no]                 # has_fts_data = Y if non-empty; segment only, never a feature
+  population_filters_mode: apply
+  reason_delimiter: "|"                       # for the reason report only
+  output_folder: reports/ri_fts
+
+cutoff_analysis:
+  models: [A, C]                        # from the locked v1.0.1 registry (M_dev), each with its own calibration and scaling
+  performance_window: OOT               # bad rates from out-of-time scores; DEV OOF as a second view
+  approval_rate_grid: [0.60, 0.70, 0.75, 0.80, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975]
+  score_band_width: 10                  # points per score band
+  compare_with: 
+  output_folder: reports/cutoff
 
 registry:
   version: "1.0.1"
