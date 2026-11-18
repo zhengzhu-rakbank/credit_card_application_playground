@@ -226,6 +226,23 @@ reject_inference:
   unclassified_action: stop                     # an unmapped reason stops the run and is listed
   output_folder: reports/ri
 
+cutoff_analysis:
+  models: [A, C]                        # from the locked 1.0.1-nofts registry (M_dev), each with its own calibration and scaling
+  performance_window: OOT
+  approval_rate_grid: [0.60, 0.70, 0.75, 0.80, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975]   # same as the FTS run
+  score_band_width: 10
+  approval_base_statuses: [GOOD, BAD, INDETERMINATE, IMMATURE, EXCLUDED_PERF]   # all scored at application; only EXCLUDED left out
+  bad_rate_statuses: [GOOD, BAD]
+  compare_with:                         # same benchmarks as the FTS run
+    - {name: A_SCORE,    column: <internal A-Score column>, higher_is_lower_risk: true, role: current_decision_score}
+    - {name: AECB_SCORE, column: aecb_AECB_Score,          higher_is_lower_risk: true, role: reference_only}
+  compare_with_fts:                     # optional: same analysis against the FTS models, read-only
+    enabled: true
+    registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json"
+    models: [A, C]
+  output_folder: reports/cutoff
+
+
 registry:
   version: "1.0.1-nofts"
   register_in_uc: false             # true = register A/B/C in Unity Catalog with alias "locked"
