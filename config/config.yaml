@@ -233,9 +233,16 @@ cutoff_analysis:
   score_band_width: 10
   approval_base_statuses: [GOOD, BAD, INDETERMINATE, IMMATURE, EXCLUDED_PERF]   # all scored at application; only EXCLUDED left out
   bad_rate_statuses: [GOOD, BAD]
-  compare_with:                         # same benchmarks as the FTS run
-    - {name: A_SCORE,    column: <internal A-Score column>, higher_is_lower_risk: true, role: current_decision_score}
-    - {name: AECB_SCORE, column: aecb_AECB_Score,          higher_is_lower_risk: true, role: reference_only}
+  compare_with:
+    - name: A_SCORE
+      table: "mis_automation.datascience_pbg.acard_a_score_snapshot_20261118"   # frozen copy, built by s00_build_a_score_snapshot
+      source_table: "mis_automation.silver_credit_card.cc_a_score_adhoc_data_file"
+      join_key: app_id
+      column: a_score
+      higher_is_lower_risk: true          # confirm from the Step 0 direction check
+      role: current_decision_score
+      definition: "<A-Score as stored in the adhoc file; matched on CRNNO, score date on or before application date>"
+    - {name: AECB_SCORE, column: aecb_AECB_Score, higher_is_lower_risk: true, role: reference_only}
   compare_with_fts:                     # optional: same analysis against the FTS models, read-only
     enabled: true
     registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json"
