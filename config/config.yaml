@@ -202,7 +202,16 @@ cutoff_analysis:
   performance_window: OOT               # bad rates from out-of-time scores; DEV OOF as a second view
   approval_rate_grid: [0.60, 0.70, 0.75, 0.80, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975]
   score_band_width: 10                  # points per score band
-  compare_with: 
+  compare_with:
+    - name: A_SCORE
+      table: "mis_automation.datascience_pbg.acard_a_score_snapshot_20261118"   # frozen copy, built by s00_build_a_score_snapshot
+      source_table: "mis_automation.silver_credit_card.cc_a_score_adhoc_data_file"
+      join_key: app_id
+      column: a_score
+      higher_is_lower_risk: true          # confirm from the Step 0 direction check
+      role: current_decision_score
+      definition: "<A-Score as stored in the adhoc file; matched on CRNNO, score date on or before application date>"
+    - {name: AECB_SCORE, column: aecb_AECB_Score, higher_is_lower_risk: true, role: reference_only}
   output_folder: reports/cutoff
 
 registry:
