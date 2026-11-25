@@ -273,9 +273,9 @@ mdd:
       artifacts_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/"
       override:
         model: C
-        approved_by: "zheng"
+        approved_by: "zheng, Abhinav"
         role: "Data Scienist"
-        date: "2026-11-xx"
+        date: "2026-11-25"
         reason: "More net bads avoid"
   doc_output_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts"   # where MDD files are written
   output_folder: reports/mdd                    # under doc_output_root
