@@ -1072,3 +1072,49 @@ def delong_test(y: np.ndarray, pd_x: np.ndarray, pd_y: np.ndarray) -> Dict[str, 
     return {"auc_x": float(aucs[0]), "auc_y": float(aucs[1]), "dAUC": d, "se": float(np.sqrt(max(var, 0))),
             "z": float(z), "p_two_sided": float(2 * norm.sf(abs(z))),
             "ci_low": d - 1.959964 * np.sqrt(max(var, 0)), "ci_high": d + 1.959964 * np.sqrt(max(var, 0))}
+
+
+# ---------------------------------------------------------------------------
+# Selected model: human-approved override (config/override.yaml) or E13 rule result
+# ---------------------------------------------------------------------------
+
+OVERRIDE_SECTION = "model_choice_override"
+OVERRIDE_FIELDS = ("selected_model", "overrides_rule_selection_of", "rules_failed", "rationale",
+                   "evidence_refs", "approved_by", "approver_role", "approved_date")
+# Registry keys appended after the lock; everything else is locked content (E12)
+POST_LOCK_SECTIONS = ("oot_evaluation", OVERRIDE_SECTION)
+
+
+def registry_locked_view(reg: dict) -> dict:
+    """Registry content locked at E12: all keys except the post-lock sections (canonical JSON)."""
+    view = {k: v for k, v in reg.items() if k not in POST_LOCK_SECTIONS}
+    return json.loads(json.dumps(view, sort_keys=True, default=str))
+
+
+def registry_locked_sha256(reg: dict) -> str:
+    """sha256 of registry_locked_view; equals oot_evaluation.locked_content_sha256 written by E13."""
+    return hashlib.sha256(json.dumps(registry_locked_view(reg), sort_keys=True).encode()).hexdigest()
+
+
+def resolve_selected_model(reg: dict, verbose: bool = True) -> Dict[str, Any]:
+    """Model to use after E13: model_choice_override.selected_model if present, else
+    oot_evaluation.selected_model. Returns {model, source, rule_selected_model, status}."""
+    ev = reg.get("oot_evaluation") or {}
+    rule_sel = ev.get("selected_model")
+    ov = reg.get(OVERRIDE_SECTION)
+    if ov:
+        missing = [f for f in OVERRIDE_FIELDS if ov.get(f) in (None, "", [])]
+        if missing:
+            raise ValueError(f"{OVERRIDE_SECTION} in the registry is incomplete: {missing}")
+        out = {"model": ov["selected_model"], "source": f"{OVERRIDE_SECTION}.selected_model",
+               "rule_selected_model": rule_sel, "status": "APPROVED_OVERRIDE",
+               "approved_by": ov["approved_by"], "approved_date": ov["approved_date"]}
+    else:
+        if not rule_sel:
+            raise ValueError("Registry has neither model_choice_override nor oot_evaluation.selected_model (run E13 first)")
+        out = {"model": rule_sel, "source": "oot_evaluation.selected_model",
+               "rule_selected_model": rule_sel, "status": ev.get("status")}
+    if verbose:
+        print(f"Selected model: {out['model']} (source: {out['source']}; E13 rule selection: {rule_sel}, "
+              f"status: {out['status']})")
+    return out

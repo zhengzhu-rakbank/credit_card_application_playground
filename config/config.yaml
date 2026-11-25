@@ -249,10 +249,36 @@ cutoff_analysis:
     models: [A, C]
   output_folder: reports/cutoff
 
-
 registry:
   version: "1.0.1-nofts"
   register_in_uc: false             # true = register A/B/C in Unity Catalog with alias "locked"
+
+mdd:
+  title: "Thin-File Credit Card Application Scorecard (A Card) – Model Development Document"
+  doc_version: "0.1 (draft)"
+  template: "docs/templates/<template name>.docx"
+  spec: ".assistant/skills/acard-scorecard/references/spec.md"     # adjust to the actual workspace path
+  human_inputs: "docs/mdd_inputs.md"
+  sections_folder: "docs/mdd/sections"
+  models:                                       # both documented equally, in this order
+    - key: nofts_c
+      label: "Model C without FTS (v1.0.1-nofts)"
+      model: C
+      registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts/model_registry.json"
+      artifacts_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts"
+    - key: fts_c
+      label: "Model C with FTS (v1.0.1)"
+      model: C
+      registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json"
+      artifacts_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/"
+      override:
+        model: C
+        approved_by: "zheng"
+        role: "Data Scienist"
+        date: "2026-11-xx"
+        reason: "More net bads avoid"
+  doc_output_root: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts"   # where MDD files are written
+  output_folder: reports/mdd                    # under doc_output_root
 
 monitoring:                         # Chapter 14 defaults
   score_log_table: null             # production log table; null = simulate on FWD/STRESS
