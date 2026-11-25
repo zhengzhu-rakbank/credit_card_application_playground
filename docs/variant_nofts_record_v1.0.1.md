@@ -9,7 +9,7 @@ It replaces the earlier record based on v1.0.0, which is now obsolete.
 | Variant registry version | `1.0.1-nofts` |
 | Git branch | `cc_variant_nofts_v101`, created from `eda` at the v1.0.1 lock commit |
 | Base commit | `<commit id>` (must equal `git_commit` in the v1.0.1 registry) |
-| Main model | v1.0.1, registry `/Volumes/mis_automation/datascience_pbg/pbg_cc_acore/output/v1.0.1/model_registry.json` |
+| Main model | v1.0.1, registry `/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json` |
 | Main model status | locked `<date>`; E13 run `<date>`; selected model `<A/B/C>` |
 | Requested by / date | `fts removal by Amrita's team(card product), requested by Abhinav, 2026-11-03` |
 | Reason | `fts data removal` |
@@ -56,9 +56,9 @@ Edit existing keys **in place**; add new keys at top level (not inside `funnel:`
 | `feature_scope.exclude_prefixes` | `["fts_"]` |
 | `tables.master` | `acard_master_v101` (read-only, unchanged from main) |
 | `tables.feature_log` | `acard_feature_log_v101_nofts` |
-| `shared_inputs.folds_root` | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_acore/output/v1.0.1/folds"` |
-| `main_artifacts_root` | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_acore/output/v1.0.1"` |
-| `artifacts_root` (in its current place) | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_acore/output/v1.0.1_nofts"` |
+| `shared_inputs.folds_root` | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/folds"` |
+| `main_artifacts_root` | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1"` |
+| `artifacts_root` (in its current place) | `"/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts"` |
 | `registry.version` | `"1.0.1-nofts"` |
 | `variant_comparison` | new; see section 4 |
 | `review_files.signoff` | unchanged (`config/signoff.yaml`; the branch has its own copy) |
@@ -111,7 +111,7 @@ the model owner; the values below are placeholders.
 
 ```yaml
 variant_comparison:                       # copied into the variant registry at E12; must not change after the lock
-  main_registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_acore/output/v1.0.1/model_registry.json"
+  main_registry: "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/model_registry.json"
   metric: gini
   acceptable_if: {delta_gini_main_minus_variant_upper_ci_max: 0.03}   # placeholder: variant at most 3 Gini points worse
   segments: [has_fts_data]                # report the comparison separately for applicants with and without FTS data
