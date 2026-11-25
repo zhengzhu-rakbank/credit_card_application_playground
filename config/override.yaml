@@ -1,0 +1,15 @@
+selected_model: C
+
+overrides_rule_selection_of: A
+
+rules_failed: [R1] # as found in Step 1
+
+rationale: "C beats A on OOT in both versions and declines more bads at the same approval rate. OOT Gini: no-FTS 0.489 vs 0.463, FTS 0.522 vs 0.492 (gain statistically above zero). Calibrated OOT log loss is better than A (no-FTS 0.26666 vs 0.27066; FTS 0.26015 vs 0.26420). No-FTS: C declines at least as many bads as A at all 10 approval rates (CI excludes zero at 60%, 70%, 85%, 90%). FTS: C ahead at 8 of 10 approval rates, CI excludes zero only at 70%. R1 failed because the lower 95% CI of the Gini gain over A is 0.0061 (no-FTS) and 0.0066 (FTS), below the 0.02 required."
+
+evidence_refs: ["/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts/reports/cutoff/cutoff_analysis_v1.0.1_nofts_A_C.xlsx: C_vs_A", "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1_nofts/reports/05_oot.xlsx", "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/reports/cutoff/cutoff_analysis_v1.0.1_A_C: C_vs_A", "/Volumes/mis_automation/datascience_pbg/pbg_cc_ascore/output/v1.0.1/reports/05_oot.xlsx"]
+
+approved_by: "Zheng Zhu, Abhinav Seth"
+
+approver_role: "Risk Analyst, Policy & Model Risk"
+
+approved_date: "2026-11-25"
