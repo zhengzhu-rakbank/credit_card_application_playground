@@ -260,6 +260,8 @@ mdd:
   spec: ".assistant/skills/acard-scorecard/references/spec.md"     # adjust to the actual workspace path
   human_inputs: "docs/mdd_inputs.md"
   sections_folder: "docs/mdd/sections"
+  previous_mdd: "docs/reference/CC_A_Scorecard_Technical_Document.docx"    #
+  template: "docs/templates/mdd_template_clean.docx"     # generated in Step 2a; replaces the blank template
   models:                                       # both documented equally, in this order
     - key: nofts_c
       label: "Model C without FTS (v1.0.1-nofts)"
